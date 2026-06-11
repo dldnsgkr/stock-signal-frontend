@@ -1,0 +1,14 @@
+{
+  "name": "@stock-signal/shared-types",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@stock-signal/tsconfig": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}

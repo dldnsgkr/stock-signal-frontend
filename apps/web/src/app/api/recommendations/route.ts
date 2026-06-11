@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const API_URL = process.env.API_URL || 'http://localhost:3001/api';
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const upstream = new URLSearchParams();
+
+  for (const key of ['market', 'action', 'page', 'pageSize']) {
+    const v = searchParams.get(key);
+    if (v) upstream.set(key, v);
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/recommendations/latest?${upstream}`, { cache: 'no-store' });
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ error: 'proxy failed' }, { status: 500 });
+  }
+}
