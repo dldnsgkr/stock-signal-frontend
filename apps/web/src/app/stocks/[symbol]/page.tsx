@@ -5,8 +5,7 @@ import { PriceChartSection } from '@/components/charts/PriceChartSection';
 import { ScoreRadarChart } from '@/components/charts/ScoreRadarChart';
 import { NewsItem } from '@/components/news/NewsItem';
 import { formatPrice, formatDate, formatPercent } from '@/lib/utils';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { BackButton } from '@/components/ui/BackButton';
 
 interface PageProps {
   params: Promise<{ symbol: string }>;
@@ -44,9 +43,7 @@ export default async function StockDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <Link href="/stocks" className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        <BackButton />
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">{stock.symbol}</h1>
