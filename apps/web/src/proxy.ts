@@ -6,25 +6,34 @@ const COOKIE_NAME = 'admin_auth';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!pathname.startsWith('/admin')) {
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isLoginPage = pathname.startsWith('/admin/login');
+  const isAdminProxy = pathname.startsWith('/api/admin-proxy');
+
+  if (!isAdminRoute && !isAdminProxy) return NextResponse.next();
+
+  const cookie = request.cookies.get(COOKIE_NAME)?.value;
+  const isAuthenticated = ADMIN_PASSWORD && cookie === ADMIN_PASSWORD;
+
+  // 로그인 페이지: 이미 인증됐으면 /admin으로
+  if (isLoginPage) {
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
     return NextResponse.next();
   }
 
-  // 로그인 페이지는 인증 없이 접근 허용
-  if (pathname === '/admin/login') {
-    return NextResponse.next();
+  // admin 페이지 & proxy: 미인증이면 차단
+  if (!isAuthenticated) {
+    if (isAdminProxy) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  const cookie = request.cookies.get(COOKIE_NAME);
-  if (ADMIN_PASSWORD && cookie?.value === ADMIN_PASSWORD) {
-    return NextResponse.next();
-  }
-
-  // 미인증 → 로그인 페이지로
-  const loginUrl = new URL('/admin/login', request.url);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin-proxy/:path*'],
 };
