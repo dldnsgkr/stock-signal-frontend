@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
+import { formatNumber } from '@/lib/utils';
 import { TrendingUp, Activity } from 'lucide-react';
 
 interface PageProps {
@@ -47,7 +48,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           title="오늘 매수 시그널"
-          value={recs ? buyTotal : '-'}
+          value={recs ? formatNumber(buyTotal) : '-'}
           subtitle="종목 수"
         />
         <StatCard
@@ -57,12 +58,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         />
         <StatCard
           title="관심 종목"
-          value={recs ? watchTotal : '-'}
+          value={recs ? formatNumber(watchTotal) : '-'}
           subtitle="WATCH 시그널"
         />
         <StatCard
           title="총 분석 종목"
-          value={recs?.total ?? '-'}
+          value={recs?.total != null ? formatNumber(recs.total) : '-'}
           subtitle={`${marketLabel} 시장`}
         />
       </div>
