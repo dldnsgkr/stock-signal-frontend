@@ -22,6 +22,7 @@ interface FetchResult {
 }
 
 const PAGE_SIZE = 50;
+const SESSION_KEY = 'stocks-snapshot';
 
 async function fetchStocks(market: string, search: string, cursorId: number | null): Promise<FetchResult> {
   const params = new URLSearchParams({ market, pageSize: String(PAGE_SIZE) });
@@ -46,6 +47,16 @@ function StocksContent() {
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // 언마운트 시점에 최신 상태를 읽기 위한 스냅샷 ref
+  const snapshotRef = useRef({ stocks, nextCursor, hasMore, market, search });
+  snapshotRef.current = { stocks, nextCursor, hasMore, market, search };
+
+  // sessionStorage 복원 후 market/search effect의 중복 로드 방지
+  const restoredRef = useRef(false);
+
+  // 복원 후 렌더링 완료되면 스크롤 이동
+  const pendingScrollRef = useRef<number | null>(null);
+
   const load = useCallback(async (cursor: number | null, reset: boolean) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -66,8 +77,53 @@ function StocksContent() {
     }
   }, [market, search]);
 
-  // market/search 변경 → 리셋 후 첫 페이지 로드
+  // 언마운트 시 현재 상태를 sessionStorage에 저장 (검색 중이면 저장 안 함)
   useEffect(() => {
+    return () => {
+      const s = snapshotRef.current;
+      if (s.stocks.length === 0 || s.search !== '') return;
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          ...s,
+          scrollY: window.scrollY,
+        }));
+      } catch {}
+    };
+  }, []);
+
+  // 마운트 시 sessionStorage 복원
+  useEffect(() => {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    if (!raw) return;
+
+    try {
+      const s = JSON.parse(raw);
+      if (s.market !== market || s.search !== '') return;
+
+      setStocks(s.stocks);
+      setNextCursor(s.nextCursor);
+      setHasMore(s.hasMore);
+      setInitialLoading(false);
+      restoredRef.current = true;
+      pendingScrollRef.current = s.scrollY;
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // stocks가 채워진 뒤 스크롤 복원
+  useEffect(() => {
+    if (pendingScrollRef.current === null || stocks.length === 0) return;
+    const y = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [stocks]);
+
+  // market/search 변경 → 리셋 후 첫 페이지 로드 (복원 직후는 건너뜀)
+  useEffect(() => {
+    if (restoredRef.current) {
+      restoredRef.current = false;
+      return;
+    }
     setStocks([]);
     setNextCursor(null);
     setHasMore(true);
@@ -100,7 +156,6 @@ function StocksContent() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
       <div>
         <h1 className="text-xl font-bold">종목 목록</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -108,7 +163,6 @@ function StocksContent() {
         </p>
       </div>
 
-      {/* 검색 */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
@@ -119,7 +173,6 @@ function StocksContent() {
         />
       </div>
 
-      {/* 목록 */}
       {initialLoading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -156,7 +209,6 @@ function StocksContent() {
             ))}
           </div>
 
-          {/* 무한스크롤 센티넬 */}
           <div ref={sentinelRef} className="h-4" />
 
           {loading && (
