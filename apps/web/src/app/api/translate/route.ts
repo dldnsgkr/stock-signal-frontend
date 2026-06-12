@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ANALYSIS_URL = process.env.ANALYSIS_SERVICE_URL || 'http://localhost:8000';
+const ANALYSIS_URL = process.env.NEXT_PUBLIC_ANALYSIS_SERVICE_URL || 'http://localhost:8000';
 
 export async function POST(request: NextRequest) {
   try {
