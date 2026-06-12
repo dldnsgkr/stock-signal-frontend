@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Play, RefreshCw, LogOut, CheckCircle, XCircle, Clock, Loader2, Zap } from 'lucide-react';
+import { Play, RefreshCw, CheckCircle, XCircle, Clock, Loader2, Zap } from 'lucide-react';
 
 type JobStatus = 'idle' | 'waiting' | 'active' | 'completed' | 'failed';
 
@@ -259,27 +258,8 @@ function PipelineButton({ market }: { market: string }) {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await fetch('/api/admin-auth', { method: 'DELETE' });
-    router.replace('/admin/login');
-  };
-
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">관리자</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">데이터 수집 및 분석 실행</p>
-        </div>
-        <button onClick={handleLogout}
-          className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">
-          <LogOut className="h-3 w-3" />
-          로그아웃
-        </button>
-      </div>
-
+    <div className="space-y-4">
       {/* 미국 */}
       <Card>
         <CardHeader><CardTitle>🇺🇸 미국 시장</CardTitle></CardHeader>

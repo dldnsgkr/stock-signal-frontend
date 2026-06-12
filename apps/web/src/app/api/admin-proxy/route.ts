@@ -22,25 +22,44 @@ export async function POST(req: NextRequest) {
     const res = await fetch(url, { method: 'POST' });
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'proxy failed' }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const queue = searchParams.get('queue');
-  const jobId = searchParams.get('jobId');
+  const endpoint = searchParams.get('endpoint');
 
-  if (!queue || !jobId) {
-    return NextResponse.json({ error: 'queue and jobId required' }, { status: 400 });
+  // job 상태 조회 (기존 방식)
+  if (!endpoint) {
+    const queue = searchParams.get('queue');
+    const jobId = searchParams.get('jobId');
+    if (!queue || !jobId) {
+      return NextResponse.json({ error: 'queue and jobId required' }, { status: 400 });
+    }
+    try {
+      const res = await fetch(`${API_URL}/admin/jobs/${queue}/${jobId}`, { cache: 'no-store' });
+      const data = await res.json();
+      return NextResponse.json(data);
+    } catch {
+      return NextResponse.json({ error: 'proxy failed' }, { status: 500 });
+    }
   }
 
+  // 범용 GET 프록시 (endpoint 파라미터 방식)
+  const forwardParams = new URLSearchParams();
+  for (const [key, value] of searchParams.entries()) {
+    if (key !== 'endpoint') forwardParams.append(key, value);
+  }
+  const query = forwardParams.toString();
+  const url = `${API_URL}${endpoint}${query ? `?${query}` : ''}`;
+
   try {
-    const res = await fetch(`${API_URL}/admin/jobs/${queue}/${jobId}`, { cache: 'no-store' });
+    const res = await fetch(url, { cache: 'no-store' });
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'proxy failed' }, { status: 500 });
   }
 }
