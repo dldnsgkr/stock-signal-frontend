@@ -69,10 +69,10 @@ function RecommendationsContent() {
   const snapshotRef = useRef({ recs, nextPage, hasMore, total, runInfo, market, action });
   snapshotRef.current = { recs, nextPage, hasMore, total, runInfo, market, action };
 
-  // sessionStorage 복원 후 market/action effect의 중복 로드 방지
-  const restoredRef = useRef(false);
+  // 첫 마운트 여부 추적 - 이후 market/action 변경은 항상 새로 로드
+  const isMountedRef = useRef(false);
 
-  // 복원 후 렌더링이 완료되면 스크롤 이동
+  // 복원 후 렌더링 완료되면 스크롤 이동
   const pendingScrollRef = useRef<number | null>(null);
 
   const load = useCallback(async (page: number, reset: boolean) => {
@@ -117,26 +117,42 @@ function RecommendationsContent() {
     };
   }, []);
 
-  // 마운트 시 sessionStorage 복원 (market/action effect보다 먼저 선언해야 순서 보장)
+  // market/action 변경 처리 + 초기 마운트 시 sessionStorage 복원 통합
   useEffect(() => {
+    // 첫 마운트가 아니면 (필터/마켓 변경) 항상 새로 로드
+    if (isMountedRef.current) {
+      setRecs([]);
+      setNextPage(null);
+      setHasMore(true);
+      load(1, true);
+      return;
+    }
+
+    isMountedRef.current = true;
+
+    // 첫 마운트: sessionStorage 복원 시도
     const raw = sessionStorage.getItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
-    if (!raw) return;
 
-    try {
-      const s = JSON.parse(raw);
-      if (s.market !== market || (s.action ?? undefined) !== action) return;
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        if (s.market === market && (s.action ?? undefined) === action) {
+          setRecs(s.recs);
+          setNextPage(s.nextPage);
+          setHasMore(s.hasMore);
+          setTotal(s.total);
+          if (s.runInfo) setRunInfo(s.runInfo);
+          setInitialLoading(false);
+          pendingScrollRef.current = s.scrollY;
+          return; // 복원 성공 → 새로 로드 안 함
+        }
+      } catch {}
+    }
 
-      setRecs(s.recs);
-      setNextPage(s.nextPage);
-      setHasMore(s.hasMore);
-      setTotal(s.total);
-      if (s.runInfo) setRunInfo(s.runInfo);
-      setInitialLoading(false);
-      restoredRef.current = true;
-      pendingScrollRef.current = s.scrollY;
-    } catch {}
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // 복원 실패 또는 조건 불일치 → 새로 로드
+    load(1, true);
+  }, [market, action]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // recs가 채워진 뒤 스크롤 복원
   useEffect(() => {
@@ -145,18 +161,6 @@ function RecommendationsContent() {
     pendingScrollRef.current = null;
     requestAnimationFrame(() => window.scrollTo(0, y));
   }, [recs]);
-
-  // market/action 변경 → 리셋 후 첫 페이지 로드 (복원 직후는 건너뜀)
-  useEffect(() => {
-    if (restoredRef.current) {
-      restoredRef.current = false;
-      return;
-    }
-    setRecs([]);
-    setNextPage(null);
-    setHasMore(true);
-    load(1, true);
-  }, [market, action]);
 
   // IntersectionObserver: sentinel이 뷰포트에 들어오면 다음 페이지 로드
   useEffect(() => {

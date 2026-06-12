@@ -51,8 +51,8 @@ function StocksContent() {
   const snapshotRef = useRef({ stocks, nextCursor, hasMore, market, search });
   snapshotRef.current = { stocks, nextCursor, hasMore, market, search };
 
-  // sessionStorage 복원 후 market/search effect의 중복 로드 방지
-  const restoredRef = useRef(false);
+  // 첫 마운트 여부 추적
+  const isMountedRef = useRef(false);
 
   // 복원 후 렌더링 완료되면 스크롤 이동
   const pendingScrollRef = useRef<number | null>(null);
@@ -91,25 +91,6 @@ function StocksContent() {
     };
   }, []);
 
-  // 마운트 시 sessionStorage 복원
-  useEffect(() => {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    sessionStorage.removeItem(SESSION_KEY);
-    if (!raw) return;
-
-    try {
-      const s = JSON.parse(raw);
-      if (s.market !== market || s.search !== '') return;
-
-      setStocks(s.stocks);
-      setNextCursor(s.nextCursor);
-      setHasMore(s.hasMore);
-      setInitialLoading(false);
-      restoredRef.current = true;
-      pendingScrollRef.current = s.scrollY;
-    } catch {}
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // stocks가 채워진 뒤 스크롤 복원
   useEffect(() => {
     if (pendingScrollRef.current === null || stocks.length === 0) return;
@@ -118,17 +99,37 @@ function StocksContent() {
     requestAnimationFrame(() => window.scrollTo(0, y));
   }, [stocks]);
 
-  // market/search 변경 → 리셋 후 첫 페이지 로드 (복원 직후는 건너뜀)
+  // market/search 변경 처리 + 초기 마운트 시 sessionStorage 복원 통합
   useEffect(() => {
-    if (restoredRef.current) {
-      restoredRef.current = false;
+    if (isMountedRef.current) {
+      setStocks([]);
+      setNextCursor(null);
+      setHasMore(true);
+      load(null, true);
       return;
     }
-    setStocks([]);
-    setNextCursor(null);
-    setHasMore(true);
+
+    isMountedRef.current = true;
+
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        if (s.market === market && s.search === '') {
+          setStocks(s.stocks);
+          setNextCursor(s.nextCursor);
+          setHasMore(s.hasMore);
+          setInitialLoading(false);
+          pendingScrollRef.current = s.scrollY;
+          return;
+        }
+      } catch {}
+    }
+
     load(null, true);
-  }, [market, search]);
+  }, [market, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // IntersectionObserver: sentinel이 화면에 들어오면 다음 페이지 로드
   useEffect(() => {
