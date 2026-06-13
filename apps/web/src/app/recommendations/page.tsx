@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingDown, ArrowRight } from 'lucide-react';
+import { formatPrice, formatPercent, formatDate } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Recommendation {
   id: number;
@@ -16,6 +18,18 @@ interface Recommendation {
   reasons: string[];
   recommendedAt: string;
   result?: { return7d: number | null; hit7d: boolean | null } | null;
+}
+
+interface SellSignal {
+  id: number;
+  stock: { symbol: string; name: string; sector: string | null; market: string };
+  buyScore: number;
+  currentScore: number;
+  entryPrice: number;
+  exitPrice: number | null;
+  reasons: string[];
+  buyDate: string;
+  sellDate: string;
 }
 
 interface FetchResult {
@@ -39,12 +53,93 @@ async function fetchRecommendations(
   return res.json();
 }
 
+async function fetchSellSignals(market: string): Promise<SellSignal[]> {
+  const res = await fetch(`/api/recommendations/sell-signals?market=${market}&limit=50`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 const ACTIONS = [
   { value: undefined, label: '전체' },
   { value: 'BUY', label: '매수 시그널' },
   { value: 'WATCH', label: '관심 종목' },
   { value: 'AVOID', label: '투자 주의' },
+  { value: 'SELL', label: '청산 시그널' },
 ] as const;
+
+function SellSignalCard({ signal }: { signal: SellSignal }) {
+  const scoreDrop = signal.currentScore - signal.buyScore;
+  const priceChange = signal.exitPrice != null
+    ? (signal.exitPrice - signal.entryPrice) / signal.entryPrice
+    : null;
+
+  return (
+    <Link href={`/stocks/${signal.stock.symbol}`} className="block">
+      <div className="rounded-xl border bg-card p-4 space-y-3 hover:shadow-md transition-shadow cursor-pointer">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">{signal.stock.symbol}</span>
+              <span className="text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400 px-2 py-0.5 font-medium">SELL</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[180px]">{signal.stock.name}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-xs text-muted-foreground">점수 변화</div>
+            <div className="flex items-center gap-1 text-xs font-medium">
+              <span className="text-muted-foreground">{signal.buyScore.toFixed(0)}</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-red-500 font-bold">{signal.currentScore.toFixed(0)}</span>
+              <span className="text-red-500">({scoreDrop > 0 ? '+' : ''}{scoreDrop.toFixed(0)})</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 가격 */}
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span>진입</span>
+            <span className="font-medium text-foreground">{formatPrice(signal.entryPrice)}</span>
+          </div>
+          {signal.exitPrice != null && (
+            <>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <span>청산</span>
+                <span className={`font-medium ${priceChange != null && priceChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {formatPrice(signal.exitPrice)}
+                </span>
+              </div>
+              {priceChange != null && (
+                <span className={`ml-auto font-semibold ${priceChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {formatPercent(priceChange)}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* 청산 근거 */}
+        {signal.reasons.length > 0 && (
+          <div className="space-y-0.5">
+            {signal.reasons.slice(0, 2).map((r, i) => (
+              <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                <TrendingDown className="h-3 w-3 text-red-400 mt-0.5 shrink-0" />{r}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* 날짜 */}
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t pt-2">
+          <span>매수 {formatDate(signal.buyDate)}</span>
+          <span>청산 {formatDate(signal.sellDate)}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 function RecommendationsContent() {
   const searchParams = useSearchParams();
@@ -52,9 +147,11 @@ function RecommendationsContent() {
   const pathname = usePathname();
 
   const market = searchParams.get('market') || 'US';
-  const action = searchParams.get('action') || undefined;
+  const action = (searchParams.get('action') as any) || undefined;
+  const isSellTab = action === 'SELL';
 
   const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [sellSignals, setSellSignals] = useState<SellSignal[]>([]);
   const [total, setTotal] = useState(0);
   const [runInfo, setRunInfo] = useState<FetchResult['runInfo']>();
   const [nextPage, setNextPage] = useState<number | null>(null);
@@ -65,14 +162,10 @@ function RecommendationsContent() {
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // 언마운트 시점에 최신 상태를 읽기 위한 스냅샷 ref
   const snapshotRef = useRef({ recs, nextPage, hasMore, total, runInfo, market, action });
   snapshotRef.current = { recs, nextPage, hasMore, total, runInfo, market, action };
 
-  // 첫 마운트 여부 추적 - 이후 market/action 변경은 항상 새로 로드
   const isMountedRef = useRef(false);
-
-  // 복원 후 렌더링 완료되면 스크롤 이동
   const pendingScrollRef = useRef<number | null>(null);
 
   const load = useCallback(async (page: number, reset: boolean) => {
@@ -103,34 +196,46 @@ function RecommendationsContent() {
     }
   }, [market, action]);
 
-  // 언마운트 시 현재 상태를 sessionStorage에 저장
+  const loadSell = useCallback(async () => {
+    setInitialLoading(true);
+    try {
+      const signals = await fetchSellSignals(market);
+      setSellSignals(signals);
+    } catch {
+      setSellSignals([]);
+    } finally {
+      setInitialLoading(false);
+    }
+  }, [market]);
+
   useEffect(() => {
     return () => {
       const s = snapshotRef.current;
       if (s.recs.length === 0) return;
       try {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-          ...s,
-          scrollY: window.scrollY,
-        }));
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...s, scrollY: window.scrollY }));
       } catch {}
     };
   }, []);
 
-  // market/action 변경 처리 + 초기 마운트 시 sessionStorage 복원 통합
   useEffect(() => {
-    // 첫 마운트가 아니면 (필터/마켓 변경) 항상 새로 로드
     if (isMountedRef.current) {
       setRecs([]);
+      setSellSignals([]);
       setNextPage(null);
       setHasMore(true);
-      load(1, true);
+      if (isSellTab) loadSell();
+      else load(1, true);
       return;
     }
 
     isMountedRef.current = true;
 
-    // 첫 마운트: sessionStorage 복원 시도
+    if (isSellTab) {
+      loadSell();
+      return;
+    }
+
     const raw = sessionStorage.getItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
 
@@ -145,16 +250,14 @@ function RecommendationsContent() {
           if (s.runInfo) setRunInfo(s.runInfo);
           setInitialLoading(false);
           pendingScrollRef.current = s.scrollY;
-          return; // 복원 성공 → 새로 로드 안 함
+          return;
         }
       } catch {}
     }
 
-    // 복원 실패 또는 조건 불일치 → 새로 로드
     load(1, true);
   }, [market, action]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // recs가 채워진 뒤 스크롤 복원
   useEffect(() => {
     if (pendingScrollRef.current === null || recs.length === 0) return;
     const y = pendingScrollRef.current;
@@ -162,11 +265,9 @@ function RecommendationsContent() {
     requestAnimationFrame(() => window.scrollTo(0, y));
   }, [recs]);
 
-  // IntersectionObserver: sentinel이 뷰포트에 들어오면 다음 페이지 로드
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el) return;
-
+    if (!el || isSellTab) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingRef.current && nextPage !== null) {
@@ -177,7 +278,7 @@ function RecommendationsContent() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, nextPage, load]);
+  }, [hasMore, nextPage, load, isSellTab]);
 
   function setMarketFilter(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -193,6 +294,8 @@ function RecommendationsContent() {
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  const marketLabel = market === 'KR' ? 'KOSPI/KOSDAQ' : 'US';
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -200,7 +303,7 @@ function RecommendationsContent() {
           <h1 className="text-xl font-bold">시그널 목록</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-            {runInfo?.executedAt
+            {runInfo?.executedAt && !isSellTab
               ? ` · 분석 ${new Date(runInfo.executedAt).toLocaleDateString('ko-KR')} · ${runInfo.modelVersion}`
               : ''}
           </p>
@@ -227,7 +330,9 @@ function RecommendationsContent() {
             onClick={() => setActionFilter(value)}
             className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
               action === value
-                ? 'bg-primary text-white border-primary'
+                ? value === 'SELL'
+                  ? 'bg-red-500 text-white border-red-500'
+                  : 'bg-primary text-white border-primary'
                 : 'hover:bg-muted text-muted-foreground'
             }`}
           >
@@ -235,7 +340,7 @@ function RecommendationsContent() {
           </button>
         ))}
         <span className="ml-auto text-xs text-muted-foreground">
-          총 {total}개
+          {isSellTab ? `${sellSignals.length}건` : `총 ${total}개`}
         </span>
       </div>
 
@@ -243,6 +348,18 @@ function RecommendationsContent() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : isSellTab ? (
+        sellSignals.length === 0 ? (
+          <Card>
+            <CardContent className="py-16 text-center text-sm text-muted-foreground">
+              {marketLabel} 시장에서 감지된 청산 시그널이 없습니다.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {sellSignals.map(s => <SellSignalCard key={s.id} signal={s} />)}
+          </div>
+        )
       ) : recs.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-sm text-muted-foreground">

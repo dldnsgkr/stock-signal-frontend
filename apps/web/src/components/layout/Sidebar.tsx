@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/stocks', label: '종목 검색', icon: Search, keepMarket: true },
   { href: '/performance', label: '성과 리포트', icon: Award, keepMarket: true },
   { href: '/simulation', label: '시뮬레이션', icon: FlaskConical, keepMarket: true },
+  { href: '/investor-trading', label: '투자자 동향', icon: Users, keepMarket: false },
   { href: '/admin', label: '관리자', icon: Settings, keepMarket: false },
 ];
 

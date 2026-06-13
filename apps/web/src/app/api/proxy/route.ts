@@ -7,6 +7,7 @@ const ALLOWED_PREFIXES = [
   '/stocks/',
   '/recommendations/',
   '/subscriptions',
+  '/market/',
 ];
 
 function isAllowed(endpoint: string) {

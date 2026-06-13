@@ -7,6 +7,7 @@ import { NewsItem } from '@/components/news/NewsItem';
 import { formatPrice, formatDate, formatPercent } from '@/lib/utils';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
+import { ScoreTrendChart } from '@/components/charts/ScoreTrendChart';
 import { TrendingDown, ArrowRight } from 'lucide-react';
 
 interface PageProps {
@@ -15,13 +16,14 @@ interface PageProps {
 
 async function getStockData(symbol: string) {
   try {
-    const [stock, prices, news, recommendations] = await Promise.all([
+    const [stock, prices, news, recommendations, scoreHistory] = await Promise.all([
       api.get<any>(`/stocks/${symbol}`),
       api.get<any[]>(`/stocks/${symbol}/prices?days=90`).catch(() => []),
       api.get<any>(`/stocks/${symbol}/news?limit=5`),
       api.get<any[]>(`/stocks/${symbol}/recommendations?limit=10`),
+      api.get<any[]>(`/stocks/${symbol}/score-history?days=90`).catch(() => []),
     ]);
-    return { stock, prices, news, recommendations };
+    return { stock, prices, news, recommendations, scoreHistory };
   } catch {
     return null;
   }
@@ -39,7 +41,7 @@ export default async function StockDetailPage({ params }: PageProps) {
     );
   }
 
-  const { stock, prices, news, recommendations } = data;
+  const { stock, prices, news, recommendations, scoreHistory } = data;
   const latestRec = recommendations?.[0];
 
   return (
@@ -125,6 +127,18 @@ export default async function StockDetailPage({ params }: PageProps) {
                 <div className="mt-3 text-xs text-muted-foreground">
                   진입가: {formatPrice(latestRec.entryPrice)} · {formatDate(latestRec.recommendedAt)}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {scoreHistory && scoreHistory.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>점수 트렌드</CardTitle></CardHeader>
+              <CardContent className="pb-3">
+                <ScoreTrendChart data={scoreHistory} />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  녹색 점선 BUY(65) · 노란 점선 WATCH(45) 기준
+                </p>
               </CardContent>
             </Card>
           )}
