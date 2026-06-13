@@ -142,7 +142,7 @@ function TimelineChart({ data }: { data: TimelinePoint[] }) {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: '220px' }} />;
+  return <ReactECharts option={option} style={{ height: '220px', width: '100%' }} />;
 }
 
 // ── 차트: 섹터별 수익률 ────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ function SectorChart({ data }: { data: SectorRow[] }) {
     }],
   };
 
-  return <ReactECharts option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px` }} />;
+  return <ReactECharts option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px`, width: '100%' }} />;
 }
 
 // ── 메인 페이지 ────────────────────────────────────────────────────────────
@@ -297,7 +297,7 @@ export default function PerformancePage() {
                 <p className="text-sm font-semibold">섹터별 평균 수익률</p>
                 <p className="text-xs text-muted-foreground">7일 기준 · BUY 시그널</p>
               </div>
-              <CardContent className="pt-3 overflow-x-auto">
+              <CardContent className="pt-3">
                 <SectorChart data={sectors} />
               </CardContent>
             </Card>
