@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const PROXY = '/api/proxy';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
@@ -198,10 +198,10 @@ export default function PerformancePage() {
     const tlPeriod = period === '7d' ? '30d' : period === '30d' ? '90d' : '90d';
     try {
       const [ovRes, tlRes, secRes, recRes] = await Promise.all([
-        fetch(`${API_BASE}/performance/overview?market=${market}&period=${period}`),
-        fetch(`${API_BASE}/performance/timeline?market=${market}&period=${tlPeriod}`),
-        fetch(`${API_BASE}/performance/by-sector?market=${market}&period=${period}`),
-        fetch(`${API_BASE}/performance/recommendations?market=${market}&period=${period}&limit=100`),
+        fetch(`${PROXY}?endpoint=/performance/overview&market=${market}&period=${period}`),
+        fetch(`${PROXY}?endpoint=/performance/timeline&market=${market}&period=${tlPeriod}`),
+        fetch(`${PROXY}?endpoint=/performance/by-sector&market=${market}&period=${period}`),
+        fetch(`${PROXY}?endpoint=/performance/recommendations&market=${market}&period=${period}&limit=100`),
       ]);
       const [ov, tl, sec, rec] = await Promise.all([ovRes.json(), tlRes.json(), secRes.json(), recRes.json()]);
       setOverview(ov);
