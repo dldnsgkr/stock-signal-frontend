@@ -6,6 +6,7 @@ import { ScoreRadarChart } from '@/components/charts/ScoreRadarChart';
 import { NewsItem } from '@/components/news/NewsItem';
 import { formatPrice, formatDate, formatPercent } from '@/lib/utils';
 import { BackButton } from '@/components/ui/BackButton';
+import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
 
 interface PageProps {
   params: Promise<{ symbol: string }>;
@@ -122,6 +123,8 @@ export default async function StockDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
+
+          <SubscriptionWidget symbol={stock.symbol} stockName={stock.name} />
 
           <Card>
             <CardHeader><CardTitle>추천 이력</CardTitle></CardHeader>
