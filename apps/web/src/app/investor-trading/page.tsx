@@ -16,17 +16,11 @@ interface InvestorEntry {
 
 interface TradingRow {
   date: string;
-  individual: InvestorEntry;
-  foreign: InvestorEntry;
-  institution: InvestorEntry;
-  financialInvestment: InvestorEntry;
-  insurance: InvestorEntry;
-  trustFund: InvestorEntry;
-  privateEquity: InvestorEntry;
-  bank: InvestorEntry;
-  pension: InvestorEntry;
-  otherFinance: InvestorEntry;
-  total: InvestorEntry;
+  institution: InvestorEntry;  // 기관합계 (TRDVAL1)
+  foreign: InvestorEntry;      // 외국인 (TRDVAL2)
+  individual: InvestorEntry;   // 개인 (TRDVAL3)
+  otherCorp: InvestorEntry;    // 기타법인+기타 (TRDVAL4)
+  total: InvestorEntry;        // 전체합계 (TRDVAL_TOT)
 }
 
 interface TradingData {
@@ -77,13 +71,7 @@ function netColor(v: number) {
 
 const INVESTOR_COLS = [
   { key: 'institution', label: '기관합계' },
-  { key: 'financialInvestment', label: '금융투자' },
-  { key: 'insurance', label: '보험' },
-  { key: 'trustFund', label: '투신' },
-  { key: 'privateEquity', label: '사모' },
-  { key: 'bank', label: '은행' },
-  { key: 'pension', label: '연기금' },
-  { key: 'otherFinance', label: '기타금융' },
+  { key: 'otherCorp',   label: '기타법인·기타' },
 ] as const;
 
 export default function InvestorTradingPage() {
