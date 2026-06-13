@@ -179,6 +179,13 @@ function RecommendationsContent() {
     return () => observer.disconnect();
   }, [hasMore, nextPage, load]);
 
+  function setMarketFilter(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('market', value);
+    params.delete('action');
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
   function setActionFilter(value: string | undefined) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set('action', value);
@@ -188,14 +195,29 @@ function RecommendationsContent() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold">시그널 목록</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-          {runInfo?.executedAt
-            ? ` · 분석 ${new Date(runInfo.executedAt).toLocaleDateString('ko-KR')} · ${runInfo.modelVersion}`
-            : ''}
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold">시그널 목록</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+            {runInfo?.executedAt
+              ? ` · 분석 ${new Date(runInfo.executedAt).toLocaleDateString('ko-KR')} · ${runInfo.modelVersion}`
+              : ''}
+          </p>
+        </div>
+        <div className="flex gap-1 rounded-lg bg-muted p-1">
+          {(['US', 'KR'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setMarketFilter(m)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {m === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
