@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { RefreshCw, Loader2, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { RefreshCw, Loader2, CheckCircle, AlertCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Run {
   id: number;
@@ -23,6 +23,53 @@ interface Failure {
   attemptsMade: number;
 }
 
+// ── 에러 진단 ──────────────────────────────────────────────────────────────
+interface Diagnosis {
+  label: string;
+  detail: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+function diagnose(reason: string): Diagnosis {
+  const r = reason.toLowerCase();
+
+  if (r.includes('econnrefused') || r.includes('connect econnrefused'))
+    return { label: '연결 거부', detail: 'Redis 또는 DB 서버에 연결하지 못했습니다. 해당 서비스가 실행 중인지 확인하세요.', severity: 'high' };
+  if (r.includes('etimedout') || r.includes('connection timed out'))
+    return { label: '연결 타임아웃', detail: '외부 서버 응답이 너무 느리거나 네트워크 문제가 있습니다.', severity: 'high' };
+  if (r.includes('timeout') || r.includes('timed out'))
+    return { label: '작업 타임아웃', detail: '설정된 시간 내에 작업이 완료되지 않았습니다. 데이터 양이 많거나 외부 API가 느린 경우 발생합니다.', severity: 'medium' };
+  if (r.includes('rate limit') || r.includes('429') || r.includes('too many requests'))
+    return { label: 'API 속도 제한', detail: '외부 API 호출 횟수가 한도를 초과했습니다. 잠시 후 재시도하거나 API 키를 점검하세요.', severity: 'medium' };
+  if (r.includes('401') || r.includes('unauthorized') || r.includes('403') || r.includes('forbidden'))
+    return { label: '인증 오류', detail: 'API 키 또는 토큰이 만료되었거나 잘못된 상태입니다. 환경변수를 확인하세요.', severity: 'high' };
+  if (r.includes('enotfound') || r.includes('getaddrinfo'))
+    return { label: 'DNS 오류', detail: '호스트를 찾을 수 없습니다. 도메인 이름이나 네트워크 연결을 확인하세요.', severity: 'high' };
+  if (r.includes('sigkill') || r.includes('killed') || r.includes('oom') || r.includes('out of memory'))
+    return { label: 'OOM / 강제 종료', detail: '프로세스가 메모리 부족으로 강제 종료되었습니다. EC2 메모리 사용량을 확인하세요.', severity: 'high' };
+  if (r.includes('stalled') || r.includes('stall'))
+    return { label: 'Job Stall', detail: 'Bull이 job lock을 갱신하지 못해 stalled 상태로 전환되었습니다. API 또는 worker 재시작 직후 발생할 수 있습니다.', severity: 'medium' };
+  if (r.includes('prisma') || r.includes('database') || r.includes('unique constraint') || r.includes('foreign key'))
+    return { label: 'DB 오류', detail: 'Prisma / PostgreSQL 쿼리 실패입니다. 데이터 무결성 문제나 DB 연결 상태를 확인하세요.', severity: 'high' };
+  if (r.includes('fetch failed') || r.includes('fetcherror') || r.includes('network error'))
+    return { label: '네트워크 오류', detail: '외부 API 요청이 실패했습니다. 인터넷 연결 또는 대상 서버 상태를 확인하세요.', severity: 'medium' };
+  if (r.includes('500') || r.includes('internal server error'))
+    return { label: '서버 내부 오류', detail: '외부 API가 500 에러를 반환했습니다. 외부 서비스 장애일 가능성이 높습니다.', severity: 'medium' };
+  if (r.includes('heap') || r.includes('memory') || r.includes('allocation failed'))
+    return { label: '메모리 부족', detail: 'Node.js 힙 메모리가 부족합니다. 대용량 데이터 처리 중 발생할 수 있습니다.', severity: 'high' };
+  if (r.includes('syntax') || r.includes('parse') || r.includes('json'))
+    return { label: '파싱 오류', detail: '외부 API 응답 또는 내부 데이터가 예상한 형식이 아닙니다.', severity: 'low' };
+
+  return { label: '알 수 없는 오류', detail: '패턴과 일치하는 원인을 찾지 못했습니다. 전체 로그를 직접 확인하세요.', severity: 'low' };
+}
+
+const severityStyle = {
+  high: 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800',
+  medium: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+  low: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
+};
+// ──────────────────────────────────────────────────────────────────────────
+
 function fmtDate(d: string | null) {
   if (!d) return '-';
   return new Date(d).toLocaleString('ko-KR', {
@@ -40,6 +87,55 @@ function timeDiff(d: string | null) {
   if (h > 0) return `${h}시간 전`;
   return `${Math.floor(diff / 60000)}분 전`;
 }
+
+// ── 개별 실패 카드 ──────────────────────────────────────────────────────────
+function FailureCard({ f }: { f: Failure }) {
+  const [expanded, setExpanded] = useState(false);
+  const diagnosis = diagnose(f.reason);
+  const isLong = f.reason.length > 300;
+
+  return (
+    <div className="py-4 px-1 flex flex-col gap-2">
+      {/* 헤더 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-semibold text-red-600 dark:text-red-400">{f.queue}</span>
+        {f.market && (
+          <span className="text-xs bg-muted px-1.5 py-0.5 rounded font-medium">{f.market}</span>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+          {fmtDate(f.failedAt)} · {timeDiff(f.failedAt)}
+        </span>
+      </div>
+
+      {/* 진단 */}
+      <div className={`rounded-md px-3 py-2 text-xs ${severityStyle[diagnosis.severity]}`}>
+        <span className="font-semibold">[{diagnosis.label}]</span>{' '}
+        {diagnosis.detail}
+      </div>
+
+      {/* 원본 에러 */}
+      <div className="rounded-md bg-muted/60 border text-xs font-mono overflow-hidden">
+        <div className="px-3 py-2 text-foreground/80 leading-relaxed whitespace-pre-wrap break-all">
+          {expanded || !isLong ? f.reason : f.reason.slice(0, 300) + '…'}
+        </div>
+        {isLong && (
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="w-full flex items-center justify-center gap-1 border-t px-3 py-1.5 text-muted-foreground hover:bg-muted text-xs"
+          >
+            {expanded
+              ? <><ChevronUp className="h-3 w-3" />접기</>
+              : <><ChevronDown className="h-3 w-3" />전체 보기 ({f.reason.length}자)</>}
+          </button>
+        )}
+      </div>
+
+      {/* 메타 */}
+      <p className="text-xs text-muted-foreground">Job #{f.jobId} · 시도 {f.attemptsMade}회</p>
+    </div>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 function RunTable({ data }: { data: Run[] }) {
   if (data.length === 0) return (
@@ -151,27 +247,9 @@ function FailureTab({ failures, loading }: { failures: Failure[]; loading: boole
         <span className="font-semibold text-sm text-red-700 dark:text-red-400">실패 로그</span>
         <span className="ml-auto text-xs text-red-500 font-medium">{failures.length}건</span>
       </div>
-      <CardContent className="pt-0 pb-0">
+      <CardContent className="pt-0 pb-2">
         <div className="divide-y">
-          {failures.map((f, i) => (
-            <div key={i} className="py-3 px-1 flex flex-col gap-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold text-red-600 dark:text-red-400">{f.queue}</span>
-                {f.market && (
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{f.market}</span>
-                )}
-                <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
-                  {fmtDate(f.failedAt)} ({timeDiff(f.failedAt)})
-                </span>
-              </div>
-              <p className="text-xs font-mono bg-muted/60 rounded px-2 py-1.5 break-all text-foreground/80 leading-relaxed">
-                {f.reason.slice(0, 400)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Job #{f.jobId} · 시도 {f.attemptsMade}회
-              </p>
-            </div>
-          ))}
+          {failures.map((f, i) => <FailureCard key={i} f={f} />)}
         </div>
       </CardContent>
     </Card>
@@ -213,7 +291,6 @@ export default function RunsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        {/* 서브탭 */}
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           {SUB_TABS.map(t => (
             <button
