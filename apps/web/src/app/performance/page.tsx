@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 const PROXY = '/api/proxy';
@@ -88,6 +88,14 @@ function HitBadge({ hit }: { hit: boolean | null }) {
 
 // ── 차트: 주별 수익률 추이 ──────────────────────────────────────────────────
 function TimelineChart({ data }: { data: TimelinePoint[] }) {
+  const chartRef = useRef<ReactECharts>(null);
+
+  useEffect(() => {
+    const handleResize = () => chartRef.current?.getEchartsInstance()?.resize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
@@ -142,11 +150,19 @@ function TimelineChart({ data }: { data: TimelinePoint[] }) {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: '220px', width: '100%' }} />;
+  return <ReactECharts ref={chartRef} option={option} style={{ height: '220px', width: '100%' }} />;
 }
 
 // ── 차트: 섹터별 수익률 ────────────────────────────────────────────────────
 function SectorChart({ data }: { data: SectorRow[] }) {
+  const chartRef = useRef<ReactECharts>(null);
+
+  useEffect(() => {
+    const handleResize = () => chartRef.current?.getEchartsInstance()?.resize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
@@ -179,7 +195,7 @@ function SectorChart({ data }: { data: SectorRow[] }) {
     }],
   };
 
-  return <ReactECharts option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px`, width: '100%' }} />;
+  return <ReactECharts ref={chartRef} option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px`, width: '100%' }} />;
 }
 
 // ── 메인 페이지 ────────────────────────────────────────────────────────────
