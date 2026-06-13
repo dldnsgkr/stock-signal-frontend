@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PriceChart } from './PriceChart';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
@@ -13,6 +13,7 @@ interface PriceData {
 interface PriceChartSectionProps {
   symbol: string;
   market: string;
+  initialData?: PriceData[];
 }
 
 const PERIODS = [
@@ -30,12 +31,19 @@ function getTradingViewUrl(symbol: string, market: string) {
   return `https://www.tradingview.com/chart/?symbol=${symbol}`;
 }
 
-export function PriceChartSection({ symbol, market }: PriceChartSectionProps) {
+export function PriceChartSection({ symbol, market, initialData }: PriceChartSectionProps) {
   const [days, setDays] = useState(90);
-  const [data, setData] = useState<PriceData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PriceData[]>(initialData ?? []);
+  const [loading, setLoading] = useState(false);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    // 첫 렌더에서 서버 데이터가 있으면 기본 기간(90일) fetch 생략
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (initialData && initialData.length > 0 && days === 90) return;
+    }
+
     setLoading(true);
     fetch(`/api/stocks/${symbol}/prices?days=${days}`)
       .then(r => r.json())

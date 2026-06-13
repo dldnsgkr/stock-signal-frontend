@@ -16,7 +16,7 @@ async function getStockData(symbol: string) {
   try {
     const [stock, prices, news, recommendations] = await Promise.all([
       api.get<any>(`/stocks/${symbol}`),
-      Promise.resolve([]),
+      api.get<any[]>(`/stocks/${symbol}/prices?days=90`).catch(() => []),
       api.get<any>(`/stocks/${symbol}/news?limit=5`),
       api.get<any>(`/recommendations/stock/${symbol}?limit=5`),
     ]);
@@ -38,7 +38,7 @@ export default async function StockDetailPage({ params }: PageProps) {
     );
   }
 
-  const { stock, news, recommendations } = data;
+  const { stock, prices, news, recommendations } = data;
   const latestRec = recommendations?.[0];
 
   return (
@@ -63,7 +63,11 @@ export default async function StockDetailPage({ params }: PageProps) {
               <CardTitle>가격 차트</CardTitle>
             </CardHeader>
             <CardContent>
-              <PriceChartSection symbol={stock.symbol} market={stock.market?.code ?? 'US'} />
+              <PriceChartSection
+                symbol={stock.symbol}
+                market={stock.market?.code ?? 'US'}
+                initialData={prices?.map((p: any) => ({ date: p.date, close: Number(p.close), volume: Number(p.volume) }))}
+              />
             </CardContent>
           </Card>
 
