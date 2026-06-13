@@ -307,34 +307,34 @@ export default function SimulationPage() {
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 border-b">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">순위</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground hidden sm:table-cell">순위</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">섹터</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">점수</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">진입가</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground hidden md:table-cell">섹터</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">점수</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">진입가</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">수익률</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">알파</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden lg:table-cell">알파</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">결과</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">추천일</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">추천일</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {positions.map(p => (
                     <tr key={p.id} className="hover:bg-muted/30">
-                      <td className="px-3 py-2 text-muted-foreground">#{p.scoreRank}</td>
+                      <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell">#{p.scoreRank}</td>
                       <td className="px-3 py-2">
                         <span className="font-semibold">{p.symbol}</span>
                         <span className="ml-1 text-muted-foreground hidden sm:inline">{p.name.slice(0,14)}</span>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">{p.sector?.split(' ')[0] ?? '-'}</td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-3 py-2 text-muted-foreground hidden md:table-cell">{p.sector?.split(' ')[0] ?? '-'}</td>
+                      <td className="px-3 py-2 text-right hidden sm:table-cell">
                         <span className="rounded bg-primary/10 text-primary px-1 py-0.5">{p.score.toFixed(0)}</span>
                       </td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">{p.entryPrice.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground hidden md:table-cell">{p.entryPrice.toLocaleString()}</td>
                       <td className="px-3 py-2 text-right"><ReturnPill v={p.return} /></td>
-                      <td className="px-3 py-2 text-right"><ReturnPill v={p.alpha} /></td>
+                      <td className="px-3 py-2 text-right hidden lg:table-cell"><ReturnPill v={p.alpha} /></td>
                       <td className="px-3 py-2 text-center"><HitBadge hit={p.hit} /></td>
-                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtDate(p.recommendedAt)}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap hidden sm:table-cell">{fmtDate(p.recommendedAt)}</td>
                     </tr>
                   ))}
                   {positions.length === 0 && (

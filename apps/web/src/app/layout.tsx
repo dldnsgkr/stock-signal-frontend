@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import './globals.css';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { TopBar } from '@/components/layout/TopBar';
+import { LayoutShell } from '@/components/layout/LayoutShell';
 
 export const metadata: Metadata = {
   title: 'Stock Signal | 데이터 기반 주식 시그널 플랫폼',
@@ -12,16 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body className="flex h-screen overflow-hidden bg-background">
-        <Suspense fallback={<div className="w-56 shrink-0 border-r bg-card" />}>
-          <Sidebar />
+      <body className="bg-background">
+        <Suspense fallback={<div className="h-dvh bg-background" />}>
+          <LayoutShell>{children}</LayoutShell>
         </Suspense>
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Suspense fallback={<div className="h-14 border-b bg-card" />}>
-            <TopBar />
-          </Suspense>
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
-        </div>
       </body>
     </html>
   );

@@ -1,11 +1,15 @@
 'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Menu } from 'lucide-react';
 
 const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/performance'];
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuClick?: () => void;
+}
+
+export function TopBar({ onMenuClick }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -20,8 +24,17 @@ export function TopBar() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-card px-6">
+    <header className="flex h-14 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-3">
+        {/* 모바일 햄버거 버튼 */}
+        <button
+          className="md:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+          onClick={onMenuClick}
+          aria-label="메뉴 열기"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         {isMarketPage && (
           <div className="flex rounded-lg border divide-x overflow-hidden text-xs font-medium">
             <button
@@ -46,16 +59,16 @@ export function TopBar() {
             </button>
           </div>
         )}
-        <span className="text-xs text-muted-foreground">
+        <span className="hidden sm:block text-xs text-muted-foreground">
           {currentMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
         </span>
       </div>
       <button
         onClick={() => router.refresh()}
-        className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+        className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted"
       >
         <RefreshCw className="h-3.5 w-3.5" />
-        새로고침
+        <span className="hidden sm:inline">새로고침</span>
       </button>
     </header>
   );

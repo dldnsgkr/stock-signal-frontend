@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto scrollbar-none">
         {tabs.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
           return (
@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
                 isActive
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground',

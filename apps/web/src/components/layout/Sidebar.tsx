@@ -25,7 +25,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-56 shrink-0 border-r bg-card flex flex-col">
+    <aside className="hidden md:flex w-56 shrink-0 border-r bg-card flex-col">
       <div className="flex h-14 items-center gap-2 border-b px-4">
         <BarChart2 className="h-5 w-5 text-primary" />
         <span className="font-bold text-sm">Stock Signal</span>
