@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle, Database, Newspaper, TrendingUp, BarChart2 } from 'lucide-react';
+import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle, Database, Newspaper, TrendingUp, BarChart2, ShieldAlert } from 'lucide-react';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface Process {
@@ -28,6 +28,23 @@ interface DataHealth {
   news: { last24h: number; last7d: number; status: HealthStatus };
   queues: Record<string, { waiting: number; active: number; failed: number } | null>;
   summary: { hasWarning: boolean; hasDanger: boolean; totalFailedJobs: number };
+}
+
+interface QualityIssue {
+  type: 'price_spike' | 'zero_price' | 'financial_anomaly';
+  severity: 'danger' | 'warn';
+  symbol: string;
+  name: string;
+  detail: string;
+  date: string;
+}
+interface DataQuality {
+  market: string;
+  checkedAt: string;
+  total: number;
+  danger: number;
+  warn: number;
+  issues: QualityIssue[];
 }
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -224,12 +241,117 @@ function QueueSection({ queues }: { queues: DataHealth['queues'] }) {
   );
 }
 
+// ── 데이터 품질 섹션 ───────────────────────────────────────────────────────
+const TYPE_LABEL: Record<QualityIssue['type'], string> = {
+  price_spike:        '가격 급변',
+  zero_price:         '이상 가격',
+  financial_anomaly:  '재무 이상치',
+};
+
+function QualitySection({ quality, loading, onCheck }: {
+  quality: DataQuality | null;
+  loading: boolean;
+  onCheck: (market: string) => void;
+}) {
+  const [market, setMarket] = useState<'US' | 'KR'>('US');
+
+  return (
+    <Card>
+      <div className="border-b px-4 py-3 flex items-center gap-2">
+        <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+        <span className="font-semibold text-sm">데이터 품질 검사</span>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex gap-1 rounded-lg bg-muted p-0.5">
+            {(['US', 'KR'] as const).map(m => (
+              <button key={m} onClick={() => setMarket(m)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${market === m ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                {m}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => onCheck(market)}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldAlert className="h-3 w-3" />}
+            검사 실행
+          </button>
+        </div>
+      </div>
+      <CardContent className="pt-4">
+        {!quality ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            검사 실행 버튼을 눌러 이상치를 확인하세요
+          </p>
+        ) : loading ? (
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : quality.total === 0 ? (
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/30 px-4 py-3">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <span className="text-sm text-green-700 dark:text-green-400">
+              {quality.market} 이상치 없음 — 가격·재무 데이터 정상
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>총 {quality.total}건</span>
+              {quality.danger > 0 && <span className="text-red-600 font-semibold">위험 {quality.danger}건</span>}
+              {quality.warn > 0   && <span className="text-amber-600 font-semibold">주의 {quality.warn}건</span>}
+              <span className="ml-auto">점검: {new Date(quality.checkedAt).toLocaleString('ko-KR')}</span>
+            </div>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">유형</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">이상 내용</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">날짜</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {quality.issues.map((issue, i) => (
+                    <tr key={i} className={`hover:bg-muted/30 ${issue.severity === 'danger' ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
+                      <td className="px-3 py-2">
+                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                          issue.severity === 'danger'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
+                        }`}>
+                          {TYPE_LABEL[issue.type]}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="font-semibold">{issue.symbol}</span>
+                        <span className="ml-1 text-muted-foreground hidden sm:inline">{issue.name.slice(0, 12)}</span>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground font-mono">{issue.detail}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">
+                        {new Date(issue.date).toLocaleDateString('ko-KR')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 // ── 메인 페이지 ────────────────────────────────────────────────────────────
 export default function SystemPage() {
-  const [health, setHealth]   = useState<DataHealth | null>(null);
-  const [status, setStatus]   = useState<SystemStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [health,   setHealth]   = useState<DataHealth | null>(null);
+  const [status,   setStatus]   = useState<SystemStatus | null>(null);
+  const [quality,  setQuality]  = useState<DataQuality | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+  const [qualityLoading, setQualityLoading] = useState(false);
 
   const fetchAll = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -244,6 +366,16 @@ export default function SystemPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const runQualityCheck = async (market: string) => {
+    setQualityLoading(true);
+    try {
+      const res = await fetch(`/api/admin-proxy?endpoint=/admin/quality&market=${market}`);
+      setQuality(await res.json());
+    } finally {
+      setQualityLoading(false);
     }
   };
 
@@ -334,6 +466,13 @@ export default function SystemPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* ── 데이터 품질 검사 ─────────────────────────────── */}
+          <QualitySection
+            quality={quality}
+            loading={qualityLoading}
+            onCheck={runQualityCheck}
+          />
 
           {/* ── PM2 프로세스 ─────────────────────────────────── */}
           <Card>
