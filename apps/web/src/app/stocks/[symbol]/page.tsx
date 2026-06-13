@@ -7,6 +7,7 @@ import { NewsItem } from '@/components/news/NewsItem';
 import { formatPrice, formatDate, formatPercent } from '@/lib/utils';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
+import { TrendingDown, ArrowRight } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ symbol: string }>;
@@ -18,7 +19,7 @@ async function getStockData(symbol: string) {
       api.get<any>(`/stocks/${symbol}`),
       api.get<any[]>(`/stocks/${symbol}/prices?days=90`).catch(() => []),
       api.get<any>(`/stocks/${symbol}/news?limit=5`),
-      api.get<any>(`/recommendations/stock/${symbol}?limit=5`),
+      api.get<any[]>(`/stocks/${symbol}/recommendations?limit=10`),
     ]);
     return { stock, prices, news, recommendations };
   } catch {
@@ -133,21 +134,57 @@ export default async function StockDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader><CardTitle>추천 이력</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {recommendations?.map((rec: any) => (
-                  <div key={rec.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <SignalBadge action={rec.action} />
-                      <span className="text-muted-foreground">{formatDate(rec.recommendedAt)}</span>
-                    </div>
-                    {rec.result?.return7d != null && (
-                      <span className={rec.result.return7d >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatPercent(rec.result.return7d)}
-                      </span>
-                    )}
-                  </div>
-                )) ?? <p className="text-muted-foreground">이력 없음</p>}
-              </div>
+              {!recommendations || recommendations.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">이력 없음</p>
+              ) : (
+                <div className="space-y-3">
+                  {recommendations.map((rec: any) => {
+                    const sell = rec.sellSignal;
+                    const ret7d = rec.result?.return7d;
+                    const hasReturn = ret7d != null;
+                    const isPositive = hasReturn && ret7d >= 0;
+                    return (
+                      <div key={rec.id} className="rounded-lg border bg-muted/20 p-3 text-xs space-y-2">
+                        {/* 진입 행 */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <SignalBadge action="BUY" />
+                            <span className="font-medium">{formatPrice(rec.entryPrice)}</span>
+                          </div>
+                          <span className="text-muted-foreground">{formatDate(rec.recommendedAt)}</span>
+                        </div>
+
+                        {/* 청산 행 (SELL 시그널 있을 때) */}
+                        {sell && (
+                          <div className="flex items-center justify-between pl-1 border-l-2 border-red-400/60">
+                            <div className="flex items-center gap-2 text-red-500">
+                              <TrendingDown className="h-3 w-3" />
+                              <span className="font-medium">SELL</span>
+                              {sell.exitPrice && (
+                                <>
+                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-foreground font-medium">{formatPrice(sell.exitPrice)}</span>
+                                </>
+                              )}
+                            </div>
+                            <span className="text-muted-foreground">{formatDate(sell.generatedAt)}</span>
+                          </div>
+                        )}
+
+                        {/* 수익률 */}
+                        {hasReturn && (
+                          <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                            <span className="text-muted-foreground">7일 수익률</span>
+                            <span className={isPositive ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'}>
+                              {formatPercent(ret7d)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
