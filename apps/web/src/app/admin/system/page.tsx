@@ -2,33 +2,40 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle, Database, Newspaper, TrendingUp, BarChart2 } from 'lucide-react';
 
+// ── 타입 ───────────────────────────────────────────────────────────────────
 interface Process {
-  id: number;
-  name: string;
-  status: string;
-  uptimeMs: number | null;
-  restarts: number;
-  memoryBytes: number;
-  cpu: number;
-  pid: number;
+  id: number; name: string; status: string;
+  uptimeMs: number | null; restarts: number;
+  memoryBytes: number; cpu: number; pid: number;
 }
-
 interface SystemStatus {
-  processes: Process[];
-  memory: string;
-  disk: string;
-  uptime: string;
-  error?: string;
+  processes: Process[]; memory: string; disk: string; uptime: string; error?: string;
 }
 
-function fmtBytes(bytes: number) {
-  if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`;
-  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(0)} MB`;
-  return `${(bytes / 1024).toFixed(0)} KB`;
-}
+type HealthStatus = 'ok' | 'warn' | 'danger' | 'unknown';
 
+interface MarketHealth {
+  market: string;
+  signal:    { lastRunAt: string | null; ageHours: number | null; runCount30d: number; status: HealthStatus };
+  price:     { lastDate: string | null; ageDays: number | null; stockCount: number; status: HealthStatus };
+  financial: { latestPeriod: string | null; count: number; status: HealthStatus };
+}
+interface DataHealth {
+  checkedAt: string;
+  markets: MarketHealth[];
+  news: { last24h: number; last7d: number; status: HealthStatus };
+  queues: Record<string, { waiting: number; active: number; failed: number } | null>;
+  summary: { hasWarning: boolean; hasDanger: boolean; totalFailedJobs: number };
+}
+// ──────────────────────────────────────────────────────────────────────────
+
+function fmtBytes(b: number) {
+  if (b >= 1073741824) return `${(b / 1073741824).toFixed(1)} GB`;
+  if (b >= 1048576)    return `${(b / 1048576).toFixed(0)} MB`;
+  return `${(b / 1024).toFixed(0)} KB`;
+}
 function fmtUptime(ms: number | null) {
   if (ms === null) return '-';
   const s = Math.floor(ms / 1000);
@@ -39,30 +46,51 @@ function fmtUptime(ms: number | null) {
   if (h > 0) return `${h}시간 ${m}분`;
   return `${m}분`;
 }
-
 function parseMemory(raw: string) {
-  const lines = raw.split('\n');
-  const memLine = lines.find(l => l.startsWith('Mem:'));
-  if (!memLine) return null;
-  const parts = memLine.split(/\s+/);
-  const total = parseInt(parts[1]);
-  const used = parseInt(parts[2]);
-  const free = parseInt(parts[3]);
-  const available = parseInt(parts[6] ?? parts[3]);
-  return { total, used, free, available };
+  const line = raw.split('\n').find(l => l.startsWith('Mem:'));
+  if (!line) return null;
+  const p = line.split(/\s+/);
+  return { total: +p[1], used: +p[2], available: +(p[6] ?? p[3]) };
 }
-
 function parseDisk(raw: string) {
-  const parts = raw.trim().split(/\s+/);
-  return {
-    size: parts[1],
-    used: parts[2],
-    avail: parts[3],
-    usePct: parts[4],
-  };
+  const p = raw.trim().split(/\s+/);
+  return { size: p[1], used: p[2], avail: p[3], usePct: p[4] };
 }
 
-function StatusBadge({ status }: { status: string }) {
+// ── 공용 컴포넌트 ──────────────────────────────────────────────────────────
+function StatusIcon({ status }: { status: HealthStatus }) {
+  if (status === 'ok')      return <CheckCircle  className="h-4 w-4 text-green-500" />;
+  if (status === 'warn')    return <AlertCircle  className="h-4 w-4 text-amber-500" />;
+  if (status === 'danger')  return <XCircle      className="h-4 w-4 text-red-500" />;
+  return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
+}
+
+const statusRing: Record<HealthStatus, string> = {
+  ok:      'border-green-200  bg-green-50  dark:border-green-900  dark:bg-green-950/30',
+  warn:    'border-amber-200  bg-amber-50  dark:border-amber-900  dark:bg-amber-950/30',
+  danger:  'border-red-200    bg-red-50    dark:border-red-900    dark:bg-red-950/30',
+  unknown: 'border-muted      bg-muted/30',
+};
+const statusLabel: Record<HealthStatus, string> = {
+  ok: '정상', warn: '주의', danger: '위험', unknown: '알 수 없음',
+};
+const statusText: Record<HealthStatus, string> = {
+  ok: 'text-green-600', warn: 'text-amber-600', danger: 'text-red-600', unknown: 'text-muted-foreground',
+};
+
+function MemBar({ pct, warn = 70, danger = 90 }: { pct: number; warn?: number; danger?: number }) {
+  const color = pct >= danger ? 'bg-red-500' : pct >= warn ? 'bg-amber-400' : 'bg-green-500';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
+      </div>
+      <span className="text-xs text-muted-foreground w-8">{pct.toFixed(0)}%</span>
+    </div>
+  );
+}
+
+function ProcessBadge({ status }: { status: string }) {
   if (status === 'online') return (
     <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
       <CheckCircle className="h-3.5 w-3.5" /> online
@@ -80,47 +108,158 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function MemBar({ pct, warn = 70, danger = 90 }: { pct: number; warn?: number; danger?: number }) {
-  const color = pct >= danger ? 'bg-red-500' : pct >= warn ? 'bg-amber-400' : 'bg-green-500';
+// ── 헬스체크 카드 ──────────────────────────────────────────────────────────
+function HealthCard({
+  icon: Icon, title, status, main, sub,
+}: {
+  icon: React.ElementType; title: string; status: HealthStatus; main: string; sub: string;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
+    <div className={`rounded-lg border p-4 space-y-2 ${statusRing[status]}`}>
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">{title}</span>
+        <span className={`ml-auto text-xs font-semibold ${statusText[status]}`}>{statusLabel[status]}</span>
       </div>
-      <span className="text-xs text-muted-foreground w-8">{pct.toFixed(0)}%</span>
+      <p className="text-lg font-bold leading-none">{main}</p>
+      <p className="text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }
 
+function MarketHealthSection({ m }: { m: MarketHealth }) {
+  const flag = m.market === 'US' ? '🇺🇸' : '🇰🇷';
+  const worst: HealthStatus =
+    m.signal.status === 'danger' || m.price.status === 'danger' ? 'danger'
+    : m.signal.status === 'warn'  || m.price.status === 'warn'  ? 'warn'
+    : 'ok';
+
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${statusRing[worst]}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-base">{flag}</span>
+        <span className="font-semibold text-sm">{m.market}</span>
+        <StatusIcon status={worst} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        {/* 시그널 */}
+        <div className="space-y-0.5">
+          <p className="text-muted-foreground flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" /> 시그널
+          </p>
+          <p className={`font-semibold ${statusText[m.signal.status]}`}>
+            {m.signal.ageHours !== null ? `${m.signal.ageHours}시간 전` : '없음'}
+          </p>
+          <p className="text-muted-foreground">30일 {m.signal.runCount30d}회 실행</p>
+        </div>
+        {/* 가격 */}
+        <div className="space-y-0.5">
+          <p className="text-muted-foreground flex items-center gap-1">
+            <BarChart2 className="h-3 w-3" /> 가격 데이터
+          </p>
+          <p className={`font-semibold ${statusText[m.price.status]}`}>
+            {m.price.ageDays !== null ? `${m.price.ageDays}일 전` : '없음'}
+          </p>
+          <p className="text-muted-foreground">{m.price.stockCount.toLocaleString()}개 종목</p>
+        </div>
+        {/* 재무 */}
+        <div className="col-span-2 space-y-0.5">
+          <p className="text-muted-foreground flex items-center gap-1">
+            <Database className="h-3 w-3" /> 재무 데이터
+          </p>
+          <p className="font-semibold">
+            {m.financial.latestPeriod
+              ? new Date(m.financial.latestPeriod).toLocaleDateString('ko-KR')
+              : '-'}
+          </p>
+          <p className="text-muted-foreground">{m.financial.count.toLocaleString()}건</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QueueSection({ queues }: { queues: DataHealth['queues'] }) {
+  const LABELS: Record<string, string> = {
+    'run-pipeline':             '전체 파이프라인',
+    'generate-recommendations': '시그널 생성',
+    'collect-prices':           '주가 수집',
+    'collect-news':             '뉴스 수집',
+    'collect-financials':       '재무 수집',
+  };
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full text-xs">
+        <thead className="bg-muted/50 border-b">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium text-muted-foreground">큐</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">대기</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">실행 중</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">실패</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {Object.entries(LABELS).map(([key, label]) => {
+            const q = queues[key];
+            return (
+              <tr key={key} className="hover:bg-muted/30">
+                <td className="px-3 py-2 font-medium">{label}</td>
+                <td className="px-3 py-2 text-right">{q?.waiting ?? '-'}</td>
+                <td className="px-3 py-2 text-right">
+                  {q?.active != null && q.active > 0
+                    ? <span className="text-blue-500 font-semibold">{q.active}</span>
+                    : (q?.active ?? '-')}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {q?.failed != null && q.failed > 0
+                    ? <span className="text-red-500 font-semibold">{q.failed}</span>
+                    : (q?.failed ?? '-')}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── 메인 페이지 ────────────────────────────────────────────────────────────
 export default function SystemPage() {
-  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [health, setHealth]   = useState<DataHealth | null>(null);
+  const [status, setStatus]   = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStatus = async (isRefresh = false) => {
+  const fetchAll = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const res = await fetch('/api/admin-proxy?endpoint=/admin/system');
-      const data = await res.json();
-      setStatus(data);
+      const [hRes, sRes] = await Promise.all([
+        fetch('/api/admin-proxy?endpoint=/admin/health'),
+        fetch('/api/admin-proxy?endpoint=/admin/system'),
+      ]);
+      const [h, s] = await Promise.all([hRes.json(), sRes.json()]);
+      setHealth(h);
+      setStatus(s);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { fetchStatus(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const mem = status?.memory ? parseMemory(status.memory) : null;
-  const disk = status?.disk ? parseDisk(status.disk) : null;
+  const mem     = status?.memory ? parseMemory(status.memory) : null;
+  const disk    = status?.disk   ? parseDisk(status.disk) : null;
   const usedPct = mem ? ((mem.total - mem.available) / mem.total) * 100 : 0;
 
   return (
     <div className="space-y-5">
+      {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">EC2 서버 실시간 상태</p>
+        <p className="text-sm text-muted-foreground">데이터 헬스체크 · EC2 서버 상태</p>
         <button
-          onClick={() => fetchStatus(true)}
+          onClick={() => fetchAll(true)}
           disabled={refreshing}
           className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
         >
@@ -133,15 +272,70 @@ export default function SystemPage() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : status?.error ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-red-500">
-            시스템 정보를 불러올 수 없습니다: {status.error}
-          </CardContent>
-        </Card>
       ) : (
         <div className="space-y-5">
-          {/* PM2 프로세스 */}
+
+          {/* ── 헬스체크 요약 배너 ──────────────────────────── */}
+          {health && (
+            <div className={`rounded-lg border px-4 py-3 flex items-center gap-3 ${
+              health.summary.hasDanger  ? 'border-red-300   bg-red-50   dark:border-red-900  dark:bg-red-950/30'
+              : health.summary.hasWarning ? 'border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
+              : 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950/30'
+            }`}>
+              <StatusIcon status={health.summary.hasDanger ? 'danger' : health.summary.hasWarning ? 'warn' : 'ok'} />
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${
+                  health.summary.hasDanger ? 'text-red-700 dark:text-red-300'
+                  : health.summary.hasWarning ? 'text-amber-700 dark:text-amber-300'
+                  : 'text-green-700 dark:text-green-300'
+                }`}>
+                  {health.summary.hasDanger  ? '데이터 이상 감지 — 즉시 확인 필요'
+                   : health.summary.hasWarning ? '일부 데이터 지연 — 확인 권장'
+                   : '모든 데이터 정상'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  점검 시각: {new Date(health.checkedAt).toLocaleString('ko-KR')}
+                  {health.summary.totalFailedJobs > 0 && ` · 실패 Job ${health.summary.totalFailedJobs}건`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── 시장별 데이터 헬스 ──────────────────────────── */}
+          {health && (
+            <Card>
+              <div className="border-b px-4 py-3">
+                <span className="font-semibold text-sm">데이터 신선도</span>
+              </div>
+              <CardContent className="pt-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {health.markets.map(m => <MarketHealthSection key={m.market} m={m} />)}
+
+                  <HealthCard
+                    icon={Newspaper}
+                    title="뉴스 수집"
+                    status={health.news.status}
+                    main={`24h: ${health.news.last24h.toLocaleString()}건`}
+                    sub={`7일: ${health.news.last7d.toLocaleString()}건`}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Bull 큐 상태 ────────────────────────────────── */}
+          {health && (
+            <Card>
+              <div className="border-b px-4 py-3">
+                <span className="font-semibold text-sm">Bull 큐 현황</span>
+              </div>
+              <CardContent className="pt-4">
+                <QueueSection queues={health.queues} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── PM2 프로세스 ─────────────────────────────────── */}
           <Card>
             <div className="border-b px-4 py-3">
               <span className="font-semibold text-sm">PM2 프로세스</span>
@@ -155,7 +349,7 @@ export default function SystemPage() {
                         <p className="font-medium text-sm truncate">{proc.name}</p>
                         <p className="text-xs text-muted-foreground">PID {proc.pid} · #{proc.id}</p>
                       </div>
-                      <StatusBadge status={proc.status} />
+                      <ProcessBadge status={proc.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
@@ -184,7 +378,7 @@ export default function SystemPage() {
             </CardContent>
           </Card>
 
-          {/* 서버 리소스 */}
+          {/* ── 서버 리소스 ──────────────────────────────────── */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <div className="border-b px-4 py-3">
@@ -195,26 +389,13 @@ export default function SystemPage() {
                   <>
                     <MemBar pct={usedPct} />
                     <div className="grid grid-cols-3 gap-2 text-xs text-center">
-                      <div>
-                        <p className="text-muted-foreground">전체</p>
-                        <p className="font-medium">{mem.total} MB</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">사용 중</p>
-                        <p className="font-medium">{(mem.total - mem.available).toLocaleString()} MB</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">사용 가능</p>
-                        <p className="font-medium text-green-600">{mem.available.toLocaleString()} MB</p>
-                      </div>
+                      <div><p className="text-muted-foreground">전체</p><p className="font-medium">{mem.total} MB</p></div>
+                      <div><p className="text-muted-foreground">사용 중</p><p className="font-medium">{(mem.total - mem.available).toLocaleString()} MB</p></div>
+                      <div><p className="text-muted-foreground">사용 가능</p><p className="font-medium text-green-600">{mem.available.toLocaleString()} MB</p></div>
                     </div>
-                    <pre className="text-xs text-muted-foreground bg-muted/50 rounded p-2 overflow-x-auto whitespace-pre">
-                      {status?.memory}
-                    </pre>
+                    <pre className="text-xs text-muted-foreground bg-muted/50 rounded p-2 overflow-x-auto whitespace-pre">{status?.memory}</pre>
                   </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">데이터 없음</p>
-                )}
+                ) : <p className="text-sm text-muted-foreground">데이터 없음</p>}
               </CardContent>
             </Card>
 
@@ -228,18 +409,9 @@ export default function SystemPage() {
                     <p className="text-xs text-muted-foreground">디스크 (루트 파티션)</p>
                     <MemBar pct={parseInt(disk.usePct)} />
                     <div className="grid grid-cols-3 gap-2 text-xs text-center">
-                      <div>
-                        <p className="text-muted-foreground">전체</p>
-                        <p className="font-medium">{disk.size}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">사용</p>
-                        <p className="font-medium">{disk.used}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">여유</p>
-                        <p className="font-medium text-green-600">{disk.avail}</p>
-                      </div>
+                      <div><p className="text-muted-foreground">전체</p><p className="font-medium">{disk.size}</p></div>
+                      <div><p className="text-muted-foreground">사용</p><p className="font-medium">{disk.used}</p></div>
+                      <div><p className="text-muted-foreground">여유</p><p className="font-medium text-green-600">{disk.avail}</p></div>
                     </div>
                   </div>
                 )}
