@@ -310,19 +310,18 @@ export default function PerformancePage() {
               <span className="text-xs text-muted-foreground ml-auto">{recs.length}건</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full min-w-[700px] text-xs">
                 <thead className="bg-muted/50 border-b">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground hidden md:table-cell">섹터</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">신뢰도</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">진입가</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">1일</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">섹터</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">신뢰도</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">진입가</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">7일</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">30일</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">30일</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">7일 적중</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden lg:table-cell">알파(7d)</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">추천일</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">알파(7d)</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">추천일</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -330,19 +329,18 @@ export default function PerformancePage() {
                     <tr key={r.id} className="hover:bg-muted/30">
                       <td className="px-3 py-2">
                         <span className="font-semibold">{r.symbol}</span>
-                        <span className="ml-1 text-muted-foreground hidden sm:inline">{r.name.slice(0, 14)}</span>
+                        <span className="ml-1 text-muted-foreground">{r.name.slice(0, 14)}</span>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground hidden md:table-cell">{r.sector?.split(' ')[0] ?? '-'}</td>
-                      <td className="px-3 py-2 text-right hidden sm:table-cell">
+                      <td className="px-3 py-2 text-muted-foreground">{r.sector?.split(' ')[0] ?? '-'}</td>
+                      <td className="px-3 py-2 text-right">
                         <span className="rounded bg-primary/10 text-primary px-1 py-0.5">{r.confidence}%</span>
                       </td>
-                      <td className="px-3 py-2 text-right text-muted-foreground hidden md:table-cell">{r.entryPrice.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right hidden md:table-cell"><ReturnCell v={r.return1d} /></td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">{r.entryPrice.toLocaleString()}</td>
                       <td className="px-3 py-2 text-right"><ReturnCell v={r.return7d} /></td>
-                      <td className="px-3 py-2 text-right hidden md:table-cell"><ReturnCell v={r.return30d} /></td>
+                      <td className="px-3 py-2 text-right"><ReturnCell v={r.return30d} /></td>
                       <td className="px-3 py-2 text-center"><HitBadge hit={r.hit7d} /></td>
-                      <td className="px-3 py-2 text-right hidden lg:table-cell"><ReturnCell v={r.alpha7d} /></td>
-                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap hidden sm:table-cell">{fmtDate(r.recommendedAt)}</td>
+                      <td className="px-3 py-2 text-right"><ReturnCell v={r.alpha7d} /></td>
+                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtDate(r.recommendedAt)}</td>
                     </tr>
                   ))}
                   {recs.length === 0 && (
