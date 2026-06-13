@@ -160,7 +160,7 @@ function DistributionChart({ data }: { data: DistPoint[] }) {
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden' }}>
       {data.length === 0 ? null : (
         <ReactECharts ref={chartRef} option={option} style={{ height: '200px', width: '100%' }} />
       )}
@@ -274,7 +274,7 @@ export default function SimulationPage() {
           {stats && (
             <div className="grid gap-4 lg:grid-cols-5">
               {/* 상세 지표 */}
-              <Card className="lg:col-span-2">
+              <Card className="lg:col-span-2 min-w-0 overflow-hidden">
                 <div className="border-b px-4 py-3">
                   <p className="text-sm font-semibold">{STRATEGY_META[strategy].label} 상세 지표</p>
                 </div>
@@ -303,7 +303,7 @@ export default function SimulationPage() {
               </Card>
 
               {/* 수익률 분포 */}
-              <Card className="lg:col-span-3">
+              <Card className="lg:col-span-3 min-w-0 overflow-hidden">
                 <div className="border-b px-4 py-3">
                   <p className="text-sm font-semibold">전체 시그널 수익률 분포</p>
                   <p className="text-xs text-muted-foreground">5% 구간별 종목 수</p>

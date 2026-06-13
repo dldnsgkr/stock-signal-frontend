@@ -60,7 +60,7 @@ export function ScoreRadarChart({ scoreDetail }: ScoreRadarChartProps) {
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden' }}>
       <ReactECharts ref={chartRef} option={option} style={{ height: '240px', width: '100%' }} />
     </div>
   );

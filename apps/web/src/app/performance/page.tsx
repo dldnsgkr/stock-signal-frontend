@@ -149,7 +149,7 @@ function TimelineChart({ data }: { data: TimelinePoint[] }) {
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden' }}>
       {data.length === 0 ? (
         <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
           평가 완료된 추천 데이터가 없습니다
@@ -202,7 +202,7 @@ function SectorChart({ data }: { data: SectorRow[] }) {
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden' }}>
       {data.length === 0 ? (
         <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
           데이터 없음
@@ -314,7 +314,7 @@ export default function PerformancePage() {
 
           {/* 차트 2열 */}
           <div className="grid gap-4 lg:grid-cols-5">
-            <Card className="lg:col-span-3">
+            <Card className="lg:col-span-3 min-w-0 overflow-hidden">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">주별 평균 수익률 추이</p>
                 <p className="text-xs text-muted-foreground">시그널 vs 벤치마크 (7일 기준)</p>
@@ -324,7 +324,7 @@ export default function PerformancePage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 min-w-0 overflow-hidden">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">섹터별 평균 수익률</p>
                 <p className="text-xs text-muted-foreground">7일 기준 · BUY 시그널</p>
