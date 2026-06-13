@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Zap, History, Terminal, Server, LogOut } from 'lucide-react';
+import { Zap, History, Terminal, Server, BarChart2, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { href: '/admin',        label: '파이프라인 실행', icon: Zap },
-  { href: '/admin/runs',   label: '실행 이력',       icon: History },
-  { href: '/admin/logs',   label: '서버 로그',       icon: Terminal },
-  { href: '/admin/system', label: '시스템 상태',     icon: Server },
+  { href: '/admin',         label: '파이프라인 실행', icon: Zap },
+  { href: '/admin/runs',    label: '실행 이력',       icon: History },
+  { href: '/admin/logs',    label: '서버 로그',       icon: Terminal },
+  { href: '/admin/system',  label: '시스템 상태',     icon: Server },
+  { href: '/admin/scoring', label: '스코어링 분석',   icon: BarChart2 },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
