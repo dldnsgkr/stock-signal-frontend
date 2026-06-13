@@ -20,8 +20,9 @@ export function ScoreRadarChart({ scoreDetail }: ScoreRadarChartProps) {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      chartRef.current?.getEchartsInstance()?.resize();
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) chartRef.current?.getEchartsInstance()?.resize({ width });
     });
     ro.observe(el);
     return () => ro.disconnect();
