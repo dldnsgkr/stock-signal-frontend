@@ -88,21 +88,18 @@ function HitBadge({ hit }: { hit: boolean | null }) {
 
 // ── 차트: 주별 수익률 추이 ──────────────────────────────────────────────────
 function TimelineChart({ data }: { data: TimelinePoint[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReactECharts>(null);
 
   useEffect(() => {
-    const handleResize = () => chartRef.current?.getEchartsInstance()?.resize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
-
-  if (data.length === 0) {
-    return (
-      <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
-        평가 완료된 추천 데이터가 없습니다
-      </div>
-    );
-  }
 
   const weeks = data.map(d => fmtDate(d.week));
   const signals = data.map(d => d.avgReturn7d != null ? +(d.avgReturn7d * 100).toFixed(2) : null);
@@ -150,26 +147,33 @@ function TimelineChart({ data }: { data: TimelinePoint[] }) {
     ],
   };
 
-  return <ReactECharts ref={chartRef} option={option} style={{ height: '220px', width: '100%' }} />;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      {data.length === 0 ? (
+        <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+          평가 완료된 추천 데이터가 없습니다
+        </div>
+      ) : (
+        <ReactECharts ref={chartRef} option={option} style={{ height: '220px', width: '100%' }} />
+      )}
+    </div>
+  );
 }
 
 // ── 차트: 섹터별 수익률 ────────────────────────────────────────────────────
 function SectorChart({ data }: { data: SectorRow[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReactECharts>(null);
 
   useEffect(() => {
-    const handleResize = () => chartRef.current?.getEchartsInstance()?.resize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
-
-  if (data.length === 0) {
-    return (
-      <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
-        데이터 없음
-      </div>
-    );
-  }
 
   const sorted = [...data].sort((a, b) => (a.avgReturn7d ?? 0) - (b.avgReturn7d ?? 0));
   const sectors = sorted.map(d => d.sector);
@@ -195,7 +199,17 @@ function SectorChart({ data }: { data: SectorRow[] }) {
     }],
   };
 
-  return <ReactECharts ref={chartRef} option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px`, width: '100%' }} />;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      {data.length === 0 ? (
+        <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+          데이터 없음
+        </div>
+      ) : (
+        <ReactECharts ref={chartRef} option={option} style={{ height: `${Math.max(180, sorted.length * 32)}px`, width: '100%' }} />
+      )}
+    </div>
+  );
 }
 
 // ── 메인 페이지 ────────────────────────────────────────────────────────────

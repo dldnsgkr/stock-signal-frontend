@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface ScoreRadarChartProps {
@@ -13,6 +14,19 @@ interface ScoreRadarChartProps {
 }
 
 export function ScoreRadarChart({ scoreDetail }: ScoreRadarChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ReactECharts>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const option = {
     radar: {
       indicator: [
@@ -44,5 +58,9 @@ export function ScoreRadarChart({ scoreDetail }: ScoreRadarChartProps) {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: '240px' }} />;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <ReactECharts ref={chartRef} option={option} style={{ height: '240px', width: '100%' }} />
+    </div>
+  );
 }

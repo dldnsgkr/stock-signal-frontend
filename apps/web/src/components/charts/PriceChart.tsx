@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface PriceData {
@@ -14,6 +15,19 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ data, symbol }: PriceChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ReactECharts>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const dates = data.map((d) => d.date.substring(0, 10));
   const closes = data.map((d) => Number(d.close));
   const volumes = data.map((d) => Number(d.volume));
@@ -55,5 +69,9 @@ export function PriceChart({ data, symbol }: PriceChartProps) {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: '360px' }} />;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <ReactECharts ref={chartRef} option={option} style={{ height: '360px', width: '100%' }} />
+    </div>
+  );
 }

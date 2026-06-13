@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
@@ -128,7 +128,18 @@ function StrategyCard({
 
 // ── 수익률 분포 차트 ────────────────────────────────────────────────────────
 function DistributionChart({ data }: { data: DistPoint[] }) {
-  if (data.length === 0) return null;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ReactECharts>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const option = {
     tooltip: { trigger: 'axis', formatter: (p: any[]) => `${p[0].axisValue}: ${p[0].value}건` },
@@ -147,7 +158,13 @@ function DistributionChart({ data }: { data: DistPoint[] }) {
     }],
   };
 
-  return <ReactECharts option={option} style={{ height: '200px' }} />;
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      {data.length === 0 ? null : (
+        <ReactECharts ref={chartRef} option={option} style={{ height: '200px', width: '100%' }} />
+      )}
+    </div>
+  );
 }
 
 // ── 메인 ────────────────────────────────────────────────────────────────────
