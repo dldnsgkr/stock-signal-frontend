@@ -106,7 +106,7 @@ export default function InvestorTradingPage() {
         `/api/proxy?endpoint=/market/investor-trading&market=${market}&fromdate=${fromdate}&todate=${todate}`,
       );
       const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      if (json.error) throw new Error(json.error);  // 503 포함 모든 에러 처리
       setData(json);
     } catch (e: any) {
       setError(e.message ?? '데이터 조회 실패');
@@ -228,8 +228,22 @@ export default function InvestorTradingPage() {
         </div>
       ) : error ? (
         <Card>
-          <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            데이터 조회 실패: {error}
+          <CardContent className="py-12 text-center space-y-3">
+            {error === 'KRX 인증 필요' ? (
+              <>
+                <p className="text-sm font-semibold text-foreground">KRX 계정 설정 필요</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  KRX 데이터 포털이 2026년부터 로그인을 요구합니다.<br />
+                  <a href="https://data.krx.co.kr" target="_blank" rel="noopener noreferrer"
+                    className="underline text-blue-500">data.krx.co.kr</a>에서 무료 회원가입 후
+                  EC2 .env에 <code className="bg-muted px-1 rounded">KRX_ID</code> /&nbsp;
+                  <code className="bg-muted px-1 rounded">KRX_PW</code> 를 추가하고
+                  PM2를 재시작하세요.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">데이터 조회 실패: {error}</p>
+            )}
           </CardContent>
         </Card>
       ) : !data || data.data.length === 0 ? (
