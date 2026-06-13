@@ -330,7 +330,7 @@ export default function InvestorTradingPage() {
           </Card>
 
           <p className="text-xs text-muted-foreground text-center pb-2">
-            * 출처: KRX (pykrx) · 개인·기타 = 기타법인 포함 · 최종 데이터는 장 마감(오후 6시) 후 확정
+            * 출처: KRX · 개인 = 개인투자자 · 최종 데이터는 장 마감(오후 6시) 후 확정
           </p>
         </>
       )}
