@@ -48,8 +48,9 @@ export default async function StockDetailPage({ params }: PageProps) {
   const { stock, prices, news, recommendations, scoreHistory, technicalLevels } = data;
   const latestRec = recommendations?.[0];
   const marketCode = stock.market?.code ?? 'US';
-  const targets = technicalLevels?.priceTargets ?? null;
-  const analystTarget = technicalLevels?.analystTarget ?? null;
+  const targets    = technicalLevels?.priceTargets ?? null;
+  const forwardPE  = technicalLevels?.forwardPE   ?? null;
+  const scenarios  = technicalLevels?.scenarios   ?? null;
 
   return (
     <div className="space-y-5">
@@ -150,44 +151,135 @@ export default async function StockDetailPage({ params }: PageProps) {
             </Card>
           )}
 
-          {(targets || analystTarget) && (
+          {(targets || scenarios || forwardPE) && (
             <Card>
               <CardHeader><CardTitle>가격 전망</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {targets?.week1 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">1주 예상 범위 (ATR 기반)</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-red-500">{formatPrice(targets.week1.low, marketCode)}</span>
-                      <span className="font-semibold text-foreground">{formatPrice(targets.week1.center, marketCode)}</span>
-                      <span className="text-green-600">{formatPrice(targets.week1.high, marketCode)}</span>
+              <CardContent className="space-y-4">
+
+                {/* 단기 범위 (ATR 기반) */}
+                {(targets?.week1 || targets?.month1) && (
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">단기 범위 (기술적)</p>
+                    {targets?.week1 && (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">1주</span>
+                          <span className="font-medium">{formatPrice(targets.week1.center, marketCode)}</span>
+                        </div>
+                        <div className="relative h-4 rounded-full bg-muted overflow-hidden">
+                          <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-red-200 via-muted to-green-200" />
+                          <div className="absolute inset-y-0 flex items-center justify-between px-2 w-full text-[9px] font-medium">
+                            <span className="text-red-600">{formatPrice(targets.week1.low, marketCode)}</span>
+                            <span className="text-green-700">{formatPrice(targets.week1.high, marketCode)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {targets?.month1 && (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">1달</span>
+                          <span className="font-medium">{formatPrice(targets.month1.center, marketCode)}</span>
+                        </div>
+                        <div className="relative h-4 rounded-full bg-muted overflow-hidden">
+                          <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-red-200 via-muted to-green-200" />
+                          <div className="absolute inset-y-0 flex items-center justify-between px-2 w-full text-[9px] font-medium">
+                            <span className="text-red-600">{formatPrice(targets.month1.low, marketCode)}</span>
+                            <span className="text-green-700">{formatPrice(targets.month1.high, marketCode)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Forward P/E 목표가 */}
+                {forwardPE && (
+                  <div className="pt-1 border-t space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">1년 Forward P/E 목표가</p>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-lg font-bold text-primary">{formatPrice(forwardPE.target, marketCode)}</span>
+                      <span className={`text-sm font-semibold ${forwardPE.upside >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                        {forwardPE.upside >= 0 ? '+' : ''}{(forwardPE.upside * 100).toFixed(1)}%
+                      </span>
                     </div>
-                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-red-300 via-muted-foreground/30 to-green-300 rounded-full" />
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      <p>EPS 예상 {formatPrice(forwardPE.forwardEps, marketCode)} × P/E {forwardPE.fairPE}배</p>
+                      {forwardPE.epsGrowth != null && (
+                        <p>EPS 성장률 <span className={forwardPE.epsGrowth >= 0 ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                          {forwardPE.epsGrowth >= 0 ? '+' : ''}{(forwardPE.epsGrowth * 100).toFixed(1)}%
+                        </span></p>
+                      )}
+                      <p className="text-[10px]">섹터({forwardPE.sector}) 기준 P/E {forwardPE.sectorPE}배 적용</p>
                     </div>
                   </div>
                 )}
-                {targets?.month1 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">1달 예상 범위 (추세 + ATR)</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-red-500">{formatPrice(targets.month1.low, marketCode)}</span>
-                      <span className="font-semibold text-foreground">{formatPrice(targets.month1.center, marketCode)}</span>
-                      <span className="text-green-600">{formatPrice(targets.month1.high, marketCode)}</span>
+
+                {/* Bull / Base / Bear 시나리오 */}
+                {scenarios && (
+                  <div className="pt-1 border-t space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">1년 시나리오</p>
+                      {scenarios.analystCount && (
+                        <span className="text-[10px] text-muted-foreground">애널리스트 {scenarios.analystCount}명</span>
+                      )}
                     </div>
-                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-red-300 via-muted-foreground/30 to-green-300 rounded-full" />
+
+                    {/* 시나리오 바 */}
+                    {(() => {
+                      const bear  = scenarios.bear.price;
+                      const base  = scenarios.base.price;
+                      const bull  = scenarios.bull.price;
+                      const cp    = technicalLevels?.currentPrice ?? base;
+                      const min   = Math.min(bear, cp) * 0.97;
+                      const max   = Math.max(bull, cp) * 1.03;
+                      const range = max - min;
+                      const pos   = (v: number) => `${Math.min(100, Math.max(0, ((v - min) / range) * 100)).toFixed(1)}%`;
+                      return (
+                        <div className="relative h-6 rounded-full bg-muted overflow-hidden my-1">
+                          {/* bear → bull 그라데이션 */}
+                          <div
+                            className="absolute inset-y-0 bg-gradient-to-r from-red-300 via-amber-200 to-green-300 rounded-full"
+                            style={{ left: pos(bear), right: `${(100 - parseFloat(pos(bull))).toFixed(1)}%` }}
+                          />
+                          {/* 현재가 마커 */}
+                          <div className="absolute inset-y-0 w-0.5 bg-foreground/60" style={{ left: pos(cp) }} />
+                          {/* 라벨 */}
+                          <div className="absolute inset-0 flex items-center justify-between px-2 text-[9px] font-semibold">
+                            <span className="text-red-700">{formatPrice(bear, marketCode)}</span>
+                            <span className="text-foreground">{formatPrice(base, marketCode)}</span>
+                            <span className="text-green-700">{formatPrice(bull, marketCode)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="grid grid-cols-3 gap-1 text-center">
+                      {[
+                        { label: '🐻 Bear', data: scenarios.bear, cls: 'text-red-500' },
+                        { label: '⚖ Base',  data: scenarios.base, cls: 'text-foreground' },
+                        { label: '🐂 Bull',  data: scenarios.bull, cls: 'text-green-600' },
+                      ].map(({ label, data, cls }) => (
+                        <div key={label} className="rounded-lg bg-muted/50 py-1.5 px-1">
+                          <p className="text-[10px] text-muted-foreground">{label}</p>
+                          <p className={`text-xs font-bold ${cls}`}>{formatPrice(data.price, marketCode)}</p>
+                          <p className={`text-[10px] font-medium ${cls}`}>
+                            {data.upside >= 0 ? '+' : ''}{(data.upside * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      ))}
                     </div>
+
+                    <p className="text-[10px] text-muted-foreground">
+                      출처: {scenarios.source === 'pe+analyst' ? 'Forward P/E + 애널리스트 컨센서스 평균'
+                           : scenarios.source === 'analyst'    ? '애널리스트 컨센서스'
+                           : 'Forward P/E 모델'}
+                    </p>
                   </div>
                 )}
-                {analystTarget && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">애널리스트 컨센서스 목표가</p>
-                    <span className="text-sm font-bold text-primary">{formatPrice(analystTarget, marketCode)}</span>
-                  </div>
-                )}
-                <p className="text-[10px] text-muted-foreground pt-1">
-                  * 기술적 지표 기반 통계 추정값. 투자 판단의 참고 자료로만 활용하세요.
+
+                <p className="text-[10px] text-muted-foreground border-t pt-2">
+                  * 참고 자료이며 투자 권유가 아닙니다. 실제 결과는 크게 다를 수 있습니다.
                 </p>
               </CardContent>
             </Card>
