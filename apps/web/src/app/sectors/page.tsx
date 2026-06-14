@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -48,13 +48,23 @@ function SignalBar({ signals, total }: { signals: SectorEntry['signals']; total:
   );
 }
 
+type MarketCode = 'US' | 'KR';
+
 export default function SectorsPage() {
   const searchParams = useSearchParams();
-  const market = searchParams.get('market') ?? 'US';
+  const router = useRouter();
+  const pathname = usePathname();
+  const market = (searchParams.get('market') ?? 'US') as MarketCode;
 
   const [data, setData] = useState<SectorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  function switchMarket(m: MarketCode) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('market', m);
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -75,11 +85,28 @@ export default function SectorsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold">섹터 분석</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {market} 시장 섹터별 시그널 집계 — 최신 추천 기준
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold">섹터 분석</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            섹터별 시그널 집계 — 최신 추천 기준
+          </p>
+        </div>
+        <div className="flex gap-1 rounded-lg bg-muted p-1">
+          {(['US', 'KR'] as MarketCode[]).map(m => (
+            <button
+              key={m}
+              onClick={() => switchMarket(m)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                market === m
+                  ? 'bg-background shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {m === 'US' ? '미국' : '한국'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
