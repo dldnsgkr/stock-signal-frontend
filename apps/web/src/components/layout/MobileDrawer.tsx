@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, X } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/performance',    label: '성과 리포트', icon: Award,        keepMarket: true },
   { href: '/simulation',        label: '시뮬레이션',  icon: FlaskConical, keepMarket: true },
   { href: '/investor-trading',  label: '투자자 동향', icon: Users,        keepMarket: false },
+  { href: '/foreign-trading',   label: '외국인 동향', icon: Globe,        keepMarket: false },
   { href: '/admin',             label: '관리자',      icon: Settings,     keepMarket: false },
 ];
 
