@@ -43,6 +43,7 @@ export default async function StockDetailPage({ params }: PageProps) {
 
   const { stock, prices, news, recommendations, scoreHistory } = data;
   const latestRec = recommendations?.[0];
+  const marketCode = stock.market?.code ?? 'US';
 
   return (
     <div className="space-y-5">
@@ -125,7 +126,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                   ))}
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground">
-                  진입가: {formatPrice(latestRec.entryPrice)} · {formatDate(latestRec.recommendedAt)}
+                  진입가: {formatPrice(latestRec.entryPrice, marketCode)} · {formatDate(latestRec.recommendedAt)}
                 </div>
               </CardContent>
             </Card>
@@ -163,7 +164,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <SignalBadge action="BUY" />
-                            <span className="font-medium">{formatPrice(rec.entryPrice)}</span>
+                            <span className="font-medium">{formatPrice(rec.entryPrice, marketCode)}</span>
                           </div>
                           <span className="text-muted-foreground">{formatDate(rec.recommendedAt)}</span>
                         </div>
@@ -177,7 +178,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                               {sell.exitPrice && (
                                 <>
                                   <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-foreground font-medium">{formatPrice(sell.exitPrice)}</span>
+                                  <span className="text-foreground font-medium">{formatPrice(sell.exitPrice, marketCode)}</span>
                                 </>
                               )}
                             </div>

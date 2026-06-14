@@ -7,7 +7,7 @@ import { formatPrice, formatPercent, formatDate } from '@/lib/utils';
 interface RecommendationCardProps {
   recommendation: {
     id: number;
-    stock: { symbol: string; name: string; sector: string | null };
+    stock: { symbol: string; name: string; sector: string | null; market?: { code: string } | null };
     action: string;
     score: number;
     confidence: number;
@@ -19,6 +19,7 @@ interface RecommendationCardProps {
 }
 
 export function RecommendationCard({ recommendation: rec }: RecommendationCardProps) {
+  const market = rec.stock.market?.code ?? 'US';
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-4">
@@ -37,7 +38,7 @@ export function RecommendationCard({ recommendation: rec }: RecommendationCardPr
             )}
           </div>
           <div className="text-right shrink-0">
-            <div className="text-sm font-semibold">{formatPrice(rec.entryPrice)}</div>
+            <div className="text-sm font-semibold">{formatPrice(rec.entryPrice, market)}</div>
             <div className="text-xs text-muted-foreground">점수 {rec.score.toFixed(1)}</div>
             {rec.result?.return7d != null && (
               <div className={`text-xs font-medium ${rec.result.return7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>

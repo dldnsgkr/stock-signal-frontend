@@ -11,8 +11,11 @@ export function formatPercent(value: number | null | undefined, decimals = 2): s
   return `${sign}${(value * 100).toFixed(decimals)}%`;
 }
 
-export function formatPrice(value: number | null | undefined): string {
+export function formatPrice(value: number | null | undefined, market = 'US'): string {
   if (value == null) return '-';
+  if (market === 'KR') {
+    return `₩${Math.round(value).toLocaleString('ko-KR')}`;
+  }
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 

@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 interface Recommendation {
   id: number;
-  stock: { symbol: string; name: string; sector: string | null };
+  stock: { symbol: string; name: string; sector: string | null; market?: { code: string } | null };
   action: string;
   score: number;
   confidence: number;
@@ -72,6 +72,7 @@ function SellSignalCard({ signal }: { signal: SellSignal }) {
   const priceChange = signal.exitPrice != null
     ? (signal.exitPrice - signal.entryPrice) / signal.entryPrice
     : null;
+  const market = signal.stock.market ?? 'US';
 
   return (
     <Link href={`/stocks/${signal.stock.symbol}`} className="block">
@@ -100,7 +101,7 @@ function SellSignalCard({ signal }: { signal: SellSignal }) {
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1 text-muted-foreground">
             <span>진입</span>
-            <span className="font-medium text-foreground">{formatPrice(signal.entryPrice)}</span>
+            <span className="font-medium text-foreground">{formatPrice(signal.entryPrice, market)}</span>
           </div>
           {signal.exitPrice != null && (
             <>
@@ -108,7 +109,7 @@ function SellSignalCard({ signal }: { signal: SellSignal }) {
               <div className="flex items-center gap-1 text-muted-foreground">
                 <span>청산</span>
                 <span className={`font-medium ${priceChange != null && priceChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                  {formatPrice(signal.exitPrice)}
+                  {formatPrice(signal.exitPrice, market)}
                 </span>
               </div>
               {priceChange != null && (
