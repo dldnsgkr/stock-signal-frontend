@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { RefreshCw, Menu } from 'lucide-react';
 
-const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/performance'];
+const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/sectors', '/performance', '/simulation'];
 
 interface TopBarProps {
   onMenuClick?: () => void;

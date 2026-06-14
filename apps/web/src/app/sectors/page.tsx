@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 
 interface SectorStock {
@@ -48,23 +48,13 @@ function SignalBar({ signals, total }: { signals: SectorEntry['signals']; total:
   );
 }
 
-type MarketCode = 'US' | 'KR';
-
 export default function SectorsPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const market = (searchParams.get('market') ?? 'US') as MarketCode;
+  const market = searchParams.get('market') ?? 'US';
 
   const [data, setData] = useState<SectorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  function switchMarket(m: MarketCode) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('market', m);
-    router.push(`${pathname}?${params.toString()}`);
-  }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -85,28 +75,11 @@ export default function SectorsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold">섹터 분석</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            섹터별 시그널 집계 — 최신 추천 기준
-          </p>
-        </div>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {(['US', 'KR'] as MarketCode[]).map(m => (
-            <button
-              key={m}
-              onClick={() => switchMarket(m)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                market === m
-                  ? 'bg-background shadow-sm text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {m === 'US' ? '미국' : '한국'}
-            </button>
-          ))}
-        </div>
+      <div>
+        <h1 className="text-xl font-bold">섹터 분석</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          섹터별 시그널 집계 — 최신 추천 기준
+        </p>
       </div>
 
       {loading ? (
@@ -119,9 +92,22 @@ export default function SectorsPage() {
           조회 실패: {error}
         </CardContent></Card>
       ) : data.length === 0 ? (
-        <Card><CardContent className="py-16 text-center text-sm text-muted-foreground">
-          데이터가 없습니다
-        </CardContent></Card>
+        <Card>
+          <CardContent className="py-16 flex flex-col items-center gap-3 text-center">
+            <Info className="h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-muted-foreground">
+              {market === 'KR'
+                ? '한국 종목 섹터 데이터가 없습니다'
+                : '섹터 데이터가 없습니다'}
+            </p>
+            {market === 'KR' && (
+              <p className="text-xs text-muted-foreground max-w-xs">
+                한국 종목은 섹터 정보가 수집되지 않은 경우 표시되지 않습니다.
+                파이프라인 실행 후 데이터가 갱신되면 자동으로 표시됩니다.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {data.map((entry) => {
