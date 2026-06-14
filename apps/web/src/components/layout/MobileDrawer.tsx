@@ -3,18 +3,19 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, X } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/',               label: '대시보드',    icon: Home,         keepMarket: true },
-  { href: '/recommendations', label: '시그널 목록', icon: TrendingUp,   keepMarket: true },
-  { href: '/stocks',         label: '종목 검색',   icon: Search,       keepMarket: true },
-  { href: '/performance',    label: '성과 리포트', icon: Award,        keepMarket: true },
-  { href: '/simulation',        label: '시뮬레이션',  icon: FlaskConical, keepMarket: true },
-  { href: '/investor-trading',  label: '투자자 동향', icon: Users,        keepMarket: false },
-  { href: '/foreign-trading',   label: '외국인 동향', icon: Globe,        keepMarket: false },
-  { href: '/admin',             label: '관리자',      icon: Settings,     keepMarket: false },
+  { href: '/',                label: '대시보드',    icon: Home,        keepMarket: true  },
+  { href: '/recommendations', label: '시그널 목록', icon: TrendingUp,  keepMarket: true  },
+  { href: '/stocks',          label: '종목 검색',   icon: Search,      keepMarket: true  },
+  { href: '/sectors',         label: '섹터 분석',   icon: LayoutGrid,  keepMarket: true  },
+  { href: '/performance',     label: '성과 리포트', icon: Award,       keepMarket: true  },
+  { href: '/simulation',      label: '시뮬레이션',  icon: FlaskConical,keepMarket: true  },
+  { href: '/investor-trading',label: '투자자 동향', icon: Users,       keepMarket: false },
+  { href: '/foreign-trading', label: '외국인 동향', icon: Globe,       keepMarket: false },
+  { href: '/admin',           label: '관리자',      icon: Settings,    keepMarket: false },
 ];
 
 interface MobileDrawerProps {
@@ -27,7 +28,6 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const searchParams = useSearchParams();
   const market = searchParams.get('market') || 'US';
 
-  // 라우트 변경 시 자동 닫힘
   useEffect(() => { onClose(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function buildHref(href: string, keepMarket: boolean) {
@@ -39,22 +39,14 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
   return (
     <>
-      {/* 배경 오버레이 */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40 md:hidden"
-        onClick={onClose}
-      />
-      {/* 드로어 */}
+      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
       <aside className="fixed left-0 top-0 h-full w-64 bg-card border-r z-50 flex flex-col md:hidden animate-in slide-in-from-left duration-200">
         <div className="flex h-14 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
             <BarChart2 className="h-5 w-5 text-primary" />
             <span className="font-bold text-sm">Stock Signal</span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
-          >
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>

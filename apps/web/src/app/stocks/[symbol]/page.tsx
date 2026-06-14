@@ -23,7 +23,11 @@ async function getStockData(symbol: string) {
       api.get<any[]>(`/stocks/${symbol}/recommendations?limit=10`),
       api.get<any[]>(`/stocks/${symbol}/score-history?days=90`).catch(() => []),
     ]);
-    return { stock, prices, news, recommendations, scoreHistory };
+    const market = stock?.market?.code ?? 'US';
+    const technicalLevels = await api.get<any>(
+      `/stocks/${symbol}/technical-levels?market=${market}`,
+    ).catch(() => null);
+    return { stock, prices, news, recommendations, scoreHistory, technicalLevels };
   } catch {
     return null;
   }
@@ -41,9 +45,11 @@ export default async function StockDetailPage({ params }: PageProps) {
     );
   }
 
-  const { stock, prices, news, recommendations, scoreHistory } = data;
+  const { stock, prices, news, recommendations, scoreHistory, technicalLevels } = data;
   const latestRec = recommendations?.[0];
   const marketCode = stock.market?.code ?? 'US';
+  const targets = technicalLevels?.priceTargets ?? null;
+  const analystTarget = technicalLevels?.analystTarget ?? null;
 
   return (
     <div className="space-y-5">
@@ -139,6 +145,49 @@ export default async function StockDetailPage({ params }: PageProps) {
                 <ScoreTrendChart data={scoreHistory} />
                 <p className="text-[10px] text-muted-foreground mt-1">
                   녹색 점선 BUY(65) · 노란 점선 WATCH(45) 기준
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {(targets || analystTarget) && (
+            <Card>
+              <CardHeader><CardTitle>가격 전망</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {targets?.week1 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">1주 예상 범위 (ATR 기반)</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-red-500">{formatPrice(targets.week1.low, marketCode)}</span>
+                      <span className="font-semibold text-foreground">{formatPrice(targets.week1.center, marketCode)}</span>
+                      <span className="text-green-600">{formatPrice(targets.week1.high, marketCode)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-red-300 via-muted-foreground/30 to-green-300 rounded-full" />
+                    </div>
+                  </div>
+                )}
+                {targets?.month1 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">1달 예상 범위 (추세 + ATR)</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-red-500">{formatPrice(targets.month1.low, marketCode)}</span>
+                      <span className="font-semibold text-foreground">{formatPrice(targets.month1.center, marketCode)}</span>
+                      <span className="text-green-600">{formatPrice(targets.month1.high, marketCode)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-red-300 via-muted-foreground/30 to-green-300 rounded-full" />
+                    </div>
+                  </div>
+                )}
+                {analystTarget && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">애널리스트 컨센서스 목표가</p>
+                    <span className="text-sm font-bold text-primary">{formatPrice(analystTarget, marketCode)}</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground pt-1">
+                  * 기술적 지표 기반 통계 추정값. 투자 판단의 참고 자료로만 활용하세요.
                 </p>
               </CardContent>
             </Card>

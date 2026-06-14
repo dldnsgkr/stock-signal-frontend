@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { PriceChart } from './PriceChart';
+import { PriceChart, TechnicalLevels } from './PriceChart';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
 interface PriceData {
@@ -35,10 +35,27 @@ export function PriceChartSection({ symbol, market, initialData }: PriceChartSec
   const [days, setDays] = useState(90);
   const [data, setData] = useState<PriceData[]>(initialData ?? []);
   const [loading, setLoading] = useState(false);
+  const [levels, setLevels] = useState<TechnicalLevels | undefined>();
   const isFirstRender = useRef(true);
 
+  // technical-levels는 한 번만 fetch (기간 변경과 무관)
   useEffect(() => {
-    // 첫 렌더에서 서버 데이터가 있으면 기본 기간(90일) fetch 생략
+    fetch(`/api/proxy?endpoint=/stocks/${symbol}/technical-levels&market=${market}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) {
+          setLevels({
+            support: d.support ?? [],
+            resistance: d.resistance ?? [],
+            ma20: d.ma20 ?? null,
+            ma60: d.ma60 ?? null,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [symbol, market]);
+
+  useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       if (initialData && initialData.length > 0 && days === 90) return;
@@ -87,7 +104,7 @@ export function PriceChartSection({ symbol, market, initialData }: PriceChartSec
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : data.length > 0 ? (
-        <PriceChart data={data} symbol={symbol} />
+        <PriceChart data={data} symbol={symbol} levels={levels} market={market} />
       ) : (
         <p className="text-sm text-muted-foreground text-center py-10">
           가격 데이터가 없습니다

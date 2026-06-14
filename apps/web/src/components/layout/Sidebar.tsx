@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: '대시보드', icon: Home, keepMarket: true },
-  { href: '/recommendations', label: '시그널 목록', icon: TrendingUp, keepMarket: true },
-  { href: '/stocks', label: '종목 검색', icon: Search, keepMarket: true },
-  { href: '/performance', label: '성과 리포트', icon: Award, keepMarket: true },
-  { href: '/simulation', label: '시뮬레이션', icon: FlaskConical, keepMarket: true },
-  { href: '/investor-trading', label: '투자자 동향', icon: Users, keepMarket: false },
-  { href: '/foreign-trading', label: '외국인 동향', icon: Globe, keepMarket: false },
-  { href: '/admin', label: '관리자', icon: Settings, keepMarket: false },
+  { href: '/',                label: '대시보드',    icon: Home,        keepMarket: true  },
+  { href: '/recommendations', label: '시그널 목록', icon: TrendingUp,  keepMarket: true  },
+  { href: '/stocks',          label: '종목 검색',   icon: Search,      keepMarket: true  },
+  { href: '/sectors',         label: '섹터 분석',   icon: LayoutGrid,  keepMarket: true  },
+  { href: '/performance',     label: '성과 리포트', icon: Award,       keepMarket: true  },
+  { href: '/simulation',      label: '시뮬레이션',  icon: FlaskConical,keepMarket: true  },
+  { href: '/investor-trading',label: '투자자 동향', icon: Users,       keepMarket: false },
+  { href: '/foreign-trading', label: '외국인 동향', icon: Globe,       keepMarket: false },
+  { href: '/admin',           label: '관리자',      icon: Settings,    keepMarket: false },
 ];
 
 export function Sidebar() {
