@@ -78,6 +78,12 @@ export default async function StockDetailPage({ params }: PageProps) {
                 symbol={stock.symbol}
                 market={stock.market?.code ?? 'US'}
                 initialData={prices?.map((p: any) => ({ date: p.date, close: Number(p.close), volume: Number(p.volume) }))}
+                initialLevels={technicalLevels ? {
+                  support: technicalLevels.support ?? [],
+                  resistance: technicalLevels.resistance ?? [],
+                  ma20: technicalLevels.ma20 ?? null,
+                  ma60: technicalLevels.ma60 ?? null,
+                } : undefined}
               />
             </CardContent>
           </Card>

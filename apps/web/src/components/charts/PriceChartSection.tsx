@@ -14,6 +14,7 @@ interface PriceChartSectionProps {
   symbol: string;
   market: string;
   initialData?: PriceData[];
+  initialLevels?: TechnicalLevels;
 }
 
 const PERIODS = [
@@ -31,15 +32,16 @@ function getTradingViewUrl(symbol: string, market: string) {
   return `https://www.tradingview.com/chart/?symbol=${symbol}`;
 }
 
-export function PriceChartSection({ symbol, market, initialData }: PriceChartSectionProps) {
+export function PriceChartSection({ symbol, market, initialData, initialLevels }: PriceChartSectionProps) {
   const [days, setDays] = useState(90);
   const [data, setData] = useState<PriceData[]>(initialData ?? []);
   const [loading, setLoading] = useState(false);
-  const [levels, setLevels] = useState<TechnicalLevels | undefined>();
+  const [levels, setLevels] = useState<TechnicalLevels | undefined>(initialLevels);
   const isFirstRender = useRef(true);
 
-  // technical-levels는 한 번만 fetch (기간 변경과 무관)
+  // SSR에서 initialLevels를 받지 못한 경우에만 클라이언트에서 fetch
   useEffect(() => {
+    if (initialLevels) return;
     fetch(`/api/proxy?endpoint=/stocks/${symbol}/technical-levels&market=${market}`)
       .then(r => r.json())
       .then(d => {
@@ -53,7 +55,7 @@ export function PriceChartSection({ symbol, market, initialData }: PriceChartSec
         }
       })
       .catch(() => {});
-  }, [symbol, market]);
+  }, [symbol, market]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isFirstRender.current) {

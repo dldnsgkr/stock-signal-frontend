@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactECharts from 'echarts-for-react';
 
 const PROXY = '/api/proxy';
@@ -216,7 +217,8 @@ function SectorChart({ data }: { data: SectorRow[] }) {
 
 // ── 메인 페이지 ────────────────────────────────────────────────────────────
 export default function PerformancePage() {
-  const [market, setMarket] = useState<Market>('US');
+  const searchParams = useSearchParams();
+  const market = (searchParams.get('market') ?? 'US') as Market;
   const [period, setPeriod] = useState<Period>('30d');
 
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -260,15 +262,6 @@ export default function PerformancePage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {/* 마켓 토글 */}
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {(['US', 'KR'] as Market[]).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                {m === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}
-              </button>
-            ))}
-          </div>
           {/* 기간 토글 */}
           <div className="flex gap-1 rounded-lg bg-muted p-1">
             {(['7d', '30d', '90d'] as Period[]).map(p => (

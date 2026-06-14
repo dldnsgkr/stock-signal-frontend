@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactECharts from 'echarts-for-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
@@ -170,7 +171,8 @@ function DistributionChart({ data }: { data: DistPoint[] }) {
 
 // ── 메인 ────────────────────────────────────────────────────────────────────
 export default function SimulationPage() {
-  const [market,   setMarket]   = useState<Market>('US');
+  const searchParams = useSearchParams();
+  const market = (searchParams.get('market') ?? 'US') as Market;
   const [period,   setPeriod]   = useState<Period>('90d');
   const [horizon,  setHorizon]  = useState<Horizon>('7d');
   const [strategy, setStrategy] = useState<Strategy>('top10');
@@ -209,15 +211,6 @@ export default function SimulationPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {/* 마켓 */}
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {(['US', 'KR'] as Market[]).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${market === m ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                {m === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}
-              </button>
-            ))}
-          </div>
           {/* 기간 */}
           <div className="flex gap-1 rounded-lg bg-muted p-1">
             {([['30d','30일'],['90d','90일'],['180d','180일']] as [Period,string][]).map(([v,l]) => (
