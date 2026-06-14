@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -23,7 +23,19 @@ interface ForeignData {
 }
 
 function toYYYYMMDD(d: Date): string {
-  return d.toISOString().slice(0, 10).replace(/-/g, '');
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+function subtractDays(yyyymmdd: string, n: number): string {
+  const y = parseInt(yyyymmdd.slice(0, 4));
+  const m = parseInt(yyyymmdd.slice(4, 6)) - 1;
+  const d = parseInt(yyyymmdd.slice(6, 8));
+  const date = new Date(y, m, d);
+  date.setDate(date.getDate() - n);
+  return toYYYYMMDD(date);
 }
 
 function toInputDate(yyyymmdd: string): string {
@@ -47,13 +59,20 @@ function netColor(v: number) {
   return v > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500';
 }
 
-function StockTable({
-  items,
-  type,
-}: {
-  items: StockEntry[];
-  type: 'buy' | 'sell';
-}) {
+async function fetchForeignData(market: string, date: string): Promise<ForeignData> {
+  const res = await fetch(
+    `/api/proxy?endpoint=/market/foreign-top-stocks&market=${market}&date=${date}&limit=30`,
+  );
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json as ForeignData;
+}
+
+function hasData(d: ForeignData) {
+  return d.topBuy.length > 0 || d.topSell.length > 0;
+}
+
+function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell' }) {
   const isBuy = type === 'buy';
   return (
     <div className="overflow-x-auto">
@@ -95,23 +114,58 @@ function StockTable({
 }
 
 export default function ForeignTradingPage() {
+  const today = toYYYYMMDD(new Date());
+
   const [market, setMarket] = useState<MarketCode>('KOSPI');
-  const [date, setDate] = useState(() => toYYYYMMDD(new Date()));
+  // 초기에는 오늘로 설정하고, 마운트 시 자동으로 데이터 있는 날짜로 이동
+  const [date, setDate] = useState(today);
+  // 데이터가 실제로 존재하는 가장 최근 날짜 — date picker의 max로 사용
+  const [latestAvailableDate, setLatestAvailableDate] = useState(today);
   const [data, setData] = useState<ForeignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 초기 자동 탐색 완료 여부
+  const initialSearchDone = useRef(false);
 
+  // 마운트 시: 오늘부터 최대 10일 전까지 데이터 있는 날 탐색
+  useEffect(() => {
+    if (initialSearchDone.current) return;
+    initialSearchDone.current = true;
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      for (let i = 0; i <= 10; i++) {
+        const candidate = subtractDays(today, i);
+        try {
+          const result = await fetchForeignData(market, candidate);
+          if (hasData(result)) {
+            setDate(candidate);
+            setLatestAvailableDate(candidate);
+            setData(result);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // 에러난 날짜는 건너뜀
+        }
+      }
+      // 10일 내 데이터 없음 — 오늘 날짜로 빈 상태 표시
+      setDate(today);
+      setData({ market, date: today, topBuy: [], topSell: [] });
+      setLoading(false);
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 사용자가 날짜/시장 변경 시 fetch (초기 탐색 이후에만)
   const fetchData = useCallback(async () => {
+    if (!initialSearchDone.current) return;
     setLoading(true);
     setError(null);
     setData(null);
     try {
-      const res = await fetch(
-        `/api/proxy?endpoint=/market/foreign-top-stocks&market=${market}&date=${date}&limit=30`,
-      );
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      setData(json);
+      const result = await fetchForeignData(market, date);
+      setData(result);
     } catch (e: any) {
       setError(e.message ?? '데이터 조회 실패');
     } finally {
@@ -119,9 +173,21 @@ export default function ForeignTradingPage() {
     }
   }, [market, date]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // market 변경 시 재조회 (초기 마운트 제외)
+  const isFirstMarketRender = useRef(true);
+  useEffect(() => {
+    if (isFirstMarketRender.current) { isFirstMarketRender.current = false; return; }
+    fetchData();
+  }, [market]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isEmpty = data && data.topBuy.length === 0 && data.topSell.length === 0;
+  // date 변경 시 재조회 (초기 마운트 제외)
+  const isFirstDateRender = useRef(true);
+  useEffect(() => {
+    if (isFirstDateRender.current) { isFirstDateRender.current = false; return; }
+    fetchData();
+  }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isEmpty = data && !hasData(data);
 
   return (
     <div className="space-y-5">
@@ -145,11 +211,11 @@ export default function ForeignTradingPage() {
               </button>
             ))}
           </div>
-          {/* 날짜 선택 */}
+          {/* 날짜 선택 — max는 데이터가 실제로 있는 가장 최근 날짜 */}
           <input
             type="date"
             value={toInputDate(date)}
-            max={toInputDate(toYYYYMMDD(new Date()))}
+            max={toInputDate(latestAvailableDate)}
             onChange={e => setDate(fromInputDate(e.target.value))}
             className="rounded-lg border bg-background px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
@@ -175,7 +241,6 @@ export default function ForeignTradingPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {/* 순매수 상위 */}
           {data!.topBuy.length > 0 && (
             <Card className="min-w-0">
               <div className="border-b px-4 py-3 flex items-center gap-2">
@@ -191,7 +256,6 @@ export default function ForeignTradingPage() {
             </Card>
           )}
 
-          {/* 순매도 상위 */}
           {data!.topSell.length > 0 && (
             <Card className="min-w-0">
               <div className="border-b px-4 py-3 flex items-center gap-2">
