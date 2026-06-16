@@ -13,6 +13,8 @@ interface StockEntry {
   netBuyVal: number;
   buyVal: number;
   sellVal: number;
+  currentPrice?: number | null;
+  changeRate?: number | null;
 }
 
 interface ForeignData {
@@ -55,8 +57,21 @@ function fmtVal(v: number): string {
   return `${sign}${Math.round(bil).toLocaleString()}억`;
 }
 
+function fmtPrice(v: number): string {
+  return v.toLocaleString('ko-KR') + '원';
+}
+
 function netColor(v: number) {
   return v > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500';
+}
+
+function changeColor(v: number) {
+  return v > 0 ? 'text-red-500' : v < 0 ? 'text-blue-600' : 'text-muted-foreground';
+}
+
+function fmtChange(v: number): string {
+  const sign = v > 0 ? '▲' : v < 0 ? '▼' : '';
+  return `${sign}${Math.abs(v).toFixed(2)}%`;
 }
 
 async function fetchForeignData(market: string, date: string): Promise<ForeignData> {
@@ -74,6 +89,8 @@ function hasData(d: ForeignData) {
 
 function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell' }) {
   const isBuy = type === 'buy';
+  const hasPrices = items.some(s => s.currentPrice != null);
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
@@ -81,11 +98,17 @@ function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell'
           <tr>
             <th className="px-2 py-2 text-center font-medium text-muted-foreground w-8">순위</th>
             <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목명</th>
+            {hasPrices && (
+              <>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">현재가</th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">등락률</th>
+              </>
+            )}
             <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
               {isBuy ? '순매수' : '순매도'}
             </th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">매수</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">매도</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap hidden sm:table-cell">매수</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap hidden sm:table-cell">매도</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -96,13 +119,25 @@ function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell'
                 <span className="font-medium">{s.name}</span>
                 <span className="ml-1.5 text-muted-foreground">{s.code}</span>
               </td>
+              {hasPrices && (
+                <>
+                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap font-medium">
+                    {s.currentPrice != null ? fmtPrice(s.currentPrice) : '—'}
+                  </td>
+                  <td className={`px-3 py-2 text-right tabular-nums whitespace-nowrap font-semibold ${
+                    s.changeRate != null ? changeColor(s.changeRate) : 'text-muted-foreground'
+                  }`}>
+                    {s.changeRate != null ? fmtChange(s.changeRate) : '—'}
+                  </td>
+                </>
+              )}
               <td className={`px-3 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${netColor(s.netBuyVal)}`}>
                 {fmtVal(s.netBuyVal)}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap">
+              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                 {fmtVal(s.buyVal)}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap">
+              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                 {fmtVal(s.sellVal)}
               </td>
             </tr>

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 
 type MarketCode = 'KOSPI' | 'KOSDAQ';
 type Period = '1w' | '1m' | '3m';
+type InvestorType = 'institution' | 'foreign';
 
 interface InvestorEntry {
   net: number;
@@ -33,6 +34,35 @@ interface TradingData {
 
 const PERIOD_DAYS: Record<Period, number> = { '1w': 7, '1m': 30, '3m': 90 };
 const PERIOD_LABELS: Record<Period, string> = { '1w': '1주', '1m': '1달', '3m': '3달' };
+
+interface TopStockEntry {
+  code: string;
+  name: string;
+  netBuyVal: number;
+  currentPrice?: number | null;
+  changeRate?: number | null;
+}
+
+interface TopStocksData {
+  market: string;
+  date: string;
+  investorType: string;
+  topBuy: TopStockEntry[];
+  topSell: TopStockEntry[];
+}
+
+function fmtPrice(v: number): string {
+  return v.toLocaleString('ko-KR') + '원';
+}
+
+function changeColor(v: number) {
+  return v > 0 ? 'text-red-500' : v < 0 ? 'text-blue-600' : 'text-muted-foreground';
+}
+
+function fmtChange(v: number): string {
+  const sign = v > 0 ? '▲' : v < 0 ? '▼' : '';
+  return `${sign}${Math.abs(v).toFixed(2)}%`;
+}
 
 function toDateStr(daysAgo: number): string {
   const d = new Date();
@@ -81,6 +111,10 @@ export default function InvestorTradingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [topStocksInvestorType, setTopStocksInvestorType] = useState<InvestorType>('institution');
+  const [topStocksData, setTopStocksData] = useState<TopStocksData | null>(null);
+  const [topStocksLoading, setTopStocksLoading] = useState(true);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReactECharts>(null);
 
@@ -116,6 +150,23 @@ export default function InvestorTradingPage() {
   }, [market, period]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchTopStocks = useCallback(async () => {
+    setTopStocksLoading(true);
+    try {
+      const res = await fetch(
+        `/api/proxy?endpoint=/market/investor-top-stocks&market=${market}&investor_type=${topStocksInvestorType}&limit=10`,
+      );
+      const json = await res.json();
+      if (!json.error) setTopStocksData(json as TopStocksData);
+    } catch {
+      // 실패해도 메인 데이터에 영향 없음
+    } finally {
+      setTopStocksLoading(false);
+    }
+  }, [market, topStocksInvestorType]);
+
+  useEffect(() => { fetchTopStocks(); }, [fetchTopStocks]);
 
   // 차트 데이터 (날짜 오름차순)
   const chartRows = data?.data ? [...data.data].reverse() : [];
@@ -274,6 +325,118 @@ export default function InvestorTradingPage() {
               );
             })}
           </div>
+
+          {/* 주요 종목 */}
+          <Card className="min-w-0">
+            <div className="border-b px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">오늘 주요 매수·매도 종목</p>
+                <p className="text-xs text-muted-foreground">
+                  {topStocksData?.date
+                    ? `${topStocksData.date.slice(0, 4)}-${topStocksData.date.slice(4, 6)}-${topStocksData.date.slice(6, 8)}`
+                    : '최근 영업일'} 기준
+                </p>
+              </div>
+              <div className="flex gap-1 rounded-lg bg-muted p-1">
+                {(['institution', 'foreign'] as InvestorType[]).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTopStocksInvestorType(t)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      topStocksInvestorType === t
+                        ? 'bg-background shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {t === 'institution' ? '기관' : '외국인'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {topStocksLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-xs">조회 중...</span>
+              </div>
+            ) : !topStocksData ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">데이터 없음</div>
+            ) : (
+              <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x">
+                {/* 순매수 상위 */}
+                <div>
+                  <div className="flex items-center gap-1.5 px-4 py-2.5 border-b bg-muted/30">
+                    <TrendingUp className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-xs font-semibold">순매수 상위</span>
+                  </div>
+                  {topStocksData.topBuy.length === 0 ? (
+                    <p className="py-6 text-center text-xs text-muted-foreground">데이터 없음</p>
+                  ) : (
+                    <div className="divide-y">
+                      {topStocksData.topBuy.slice(0, 10).map((s, i) => (
+                        <div key={s.code} className="flex items-center px-4 py-2.5 hover:bg-muted/30 gap-3">
+                          <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{s.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{s.code}</p>
+                          </div>
+                          {s.currentPrice != null && (
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-medium tabular-nums">{fmtPrice(s.currentPrice)}</p>
+                              {s.changeRate != null && (
+                                <p className={`text-[10px] font-semibold tabular-nums ${changeColor(s.changeRate)}`}>
+                                  {fmtChange(s.changeRate)}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs font-semibold text-blue-600 tabular-nums shrink-0 w-16 text-right">
+                            {fmtValue(s.netBuyVal, true)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 순매도 상위 */}
+                <div>
+                  <div className="flex items-center gap-1.5 px-4 py-2.5 border-b bg-muted/30">
+                    <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-xs font-semibold">순매도 상위</span>
+                  </div>
+                  {topStocksData.topSell.length === 0 ? (
+                    <p className="py-6 text-center text-xs text-muted-foreground">데이터 없음</p>
+                  ) : (
+                    <div className="divide-y">
+                      {topStocksData.topSell.slice(0, 10).map((s, i) => (
+                        <div key={s.code} className="flex items-center px-4 py-2.5 hover:bg-muted/30 gap-3">
+                          <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{s.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{s.code}</p>
+                          </div>
+                          {s.currentPrice != null && (
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-medium tabular-nums">{fmtPrice(s.currentPrice)}</p>
+                              {s.changeRate != null && (
+                                <p className={`text-[10px] font-semibold tabular-nums ${changeColor(s.changeRate)}`}>
+                                  {fmtChange(s.changeRate)}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs font-semibold text-red-500 tabular-nums shrink-0 w-16 text-right">
+                            {fmtValue(s.netBuyVal, true)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Card>
 
           {/* 추세 차트 */}
           <Card className="min-w-0 overflow-hidden">

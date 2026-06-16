@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { RefreshCw, Menu } from 'lucide-react';
+import { RefreshCw, Menu, LogIn, LogOut } from 'lucide-react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import Image from 'next/image';
 
 const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/sectors', '/performance', '/simulation'];
 
@@ -14,6 +16,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentMarket = searchParams.get('market') || 'US';
+  const { data: session } = useSession();
 
   const isMarketPage = MARKET_PAGES.some((p) => pathname === p);
 
@@ -63,13 +66,47 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           {currentMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
         </span>
       </div>
-      <button
-        onClick={() => router.refresh()}
-        className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted"
-      >
-        <RefreshCw className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">새로고침</span>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => router.refresh()}
+          className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">새로고침</span>
+        </button>
+
+        {session ? (
+          <div className="flex items-center gap-2">
+            {session.user.image && (
+              <Image
+                src={session.user.image}
+                alt={session.user.name ?? '프로필'}
+                width={28}
+                height={28}
+                className="rounded-full ring-1 ring-border"
+              />
+            )}
+            <span className="hidden sm:block text-xs text-muted-foreground max-w-[80px] truncate">
+              {session.user.name}
+            </span>
+            <button
+              onClick={() => signOut()}
+              className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+              title="로그아웃"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => signIn('google')}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            로그인
+          </button>
+        )}
+      </div>
     </header>
   );
 }

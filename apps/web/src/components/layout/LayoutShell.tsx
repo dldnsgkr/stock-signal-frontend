@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, Suspense } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileDrawer } from './MobileDrawer';
 
+const FULL_SCREEN_ROUTES = ['/login'];
+
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  if (FULL_SCREEN_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
