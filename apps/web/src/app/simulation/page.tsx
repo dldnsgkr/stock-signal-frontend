@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactECharts from 'echarts-for-react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Minus, Info, Clock } from 'lucide-react';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface StrategyStats {
@@ -66,8 +66,40 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
-function ReturnPill({ v }: { v: number | null }) {
-  if (v == null) return <span className="text-muted-foreground text-xs">-</span>;
+/**
+ * N일 지표는 추천 후 N일이 지나야 집계된다. 아직 안 지난 값이 비어 있는 것은
+ * 정상인데 '-' 로만 보이면 고장으로 읽히므로, 남은 일수를 돌려준다.
+ * 성숙했는데도 값이 없으면(상장폐지 등) 0 을 돌려 '-' 로 표시한다.
+ */
+function daysUntilMature(recommendedAt: string, horizonDays: number): number {
+  const elapsedMs = Date.now() - new Date(recommendedAt).getTime();
+  const remaining = horizonDays - Math.floor(elapsedMs / 86400000);
+  return remaining > 0 ? remaining : 0;
+}
+
+function PendingCell({ days }: { days: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground/60 whitespace-nowrap">
+      <Clock className="h-2.5 w-2.5" />
+      {days}일 후
+    </span>
+  );
+}
+
+function ReturnPill({
+  v,
+  recommendedAt,
+  horizon,
+}: {
+  v: number | null;
+  recommendedAt?: string;
+  horizon?: number;
+}) {
+  if (v == null) {
+    const pending = recommendedAt && horizon ? daysUntilMature(recommendedAt, horizon) : 0;
+    if (pending > 0) return <PendingCell days={pending} />;
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
   const cls = v > 0 ? 'text-green-600' : v < 0 ? 'text-red-500' : 'text-muted-foreground';
   const Icon = v > 0 ? TrendingUp : v < 0 ? TrendingDown : Minus;
   return (
@@ -77,8 +109,20 @@ function ReturnPill({ v }: { v: number | null }) {
   );
 }
 
-function HitBadge({ hit }: { hit: boolean | null }) {
-  if (hit == null) return <span className="text-muted-foreground text-xs">-</span>;
+function HitBadge({
+  hit,
+  recommendedAt,
+  horizon,
+}: {
+  hit: boolean | null;
+  recommendedAt?: string;
+  horizon?: number;
+}) {
+  if (hit == null) {
+    const pending = recommendedAt && horizon ? daysUntilMature(recommendedAt, horizon) : 0;
+    if (pending > 0) return <PendingCell days={pending} />;
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
   return (
     <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${hit ? 'bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'}`}>
       {hit ? '수익' : '손실'}
@@ -194,6 +238,8 @@ export default function SimulationPage() {
   useEffect(() => { fetchSim(); }, [fetchSim]);
 
   const stats     = result?.strategies[strategy] ?? null;
+  // 표에 보이는 값의 실제 기준. 재조회 중에는 로컬 state 와 어긋날 수 있으므로 응답값을 쓴다.
+  const horizonDays = (result?.horizon ?? horizon) === '30d' ? 30 : 7;
   const positions = result?.positions.filter(p =>
     strategy === 'all'  ? true :
     strategy === 'top5' ? p.scoreRank <= 5 :
@@ -342,9 +388,9 @@ export default function SimulationPage() {
                         <span className="rounded bg-primary/10 text-primary px-1 py-0.5">{p.score.toFixed(0)}</span>
                       </td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{p.entryPrice.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right"><ReturnPill v={p.return} /></td>
-                      <td className="px-3 py-2 text-right"><ReturnPill v={p.alpha} /></td>
-                      <td className="px-3 py-2 text-center"><HitBadge hit={p.hit} /></td>
+                      <td className="px-3 py-2 text-right"><ReturnPill v={p.return} recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
+                      <td className="px-3 py-2 text-right"><ReturnPill v={p.alpha}  recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
+                      <td className="px-3 py-2 text-center"><HitBadge  hit={p.hit}  recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
                       <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtDate(p.recommendedAt)}</td>
                     </tr>
                   ))}
