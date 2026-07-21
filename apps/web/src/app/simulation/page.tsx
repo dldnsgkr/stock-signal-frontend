@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ReactECharts from 'echarts-for-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Info, Clock } from 'lucide-react';
+import { fmtMarketDate, marketTimeZoneLabel } from '@/lib/marketTime';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface StrategyStats {
@@ -62,10 +63,6 @@ function pct(v: number | null, digits = 2) {
   if (v == null) return '-';
   return `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
 }
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-}
-
 /**
  * N일 지표는 추천 후 N일이 지나야 집계된다. 아직 안 지난 값이 비어 있는 것은
  * 정상인데 '-' 로만 보이면 고장으로 읽히므로, 남은 일수를 돌려준다.
@@ -372,7 +369,9 @@ export default function SimulationPage() {
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">수익률</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">알파</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">결과</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">추천일</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
+                      추천일 <span className="font-normal text-[10px] opacity-70">({marketTimeZoneLabel(market)})</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -391,7 +390,7 @@ export default function SimulationPage() {
                       <td className="px-3 py-2 text-right"><ReturnPill v={p.return} recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
                       <td className="px-3 py-2 text-right"><ReturnPill v={p.alpha}  recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
                       <td className="px-3 py-2 text-center"><HitBadge  hit={p.hit}  recommendedAt={p.recommendedAt} horizon={horizonDays} /></td>
-                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtDate(p.recommendedAt)}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtMarketDate(p.recommendedAt, market)}</td>
                     </tr>
                   ))}
                   {positions.length === 0 && (

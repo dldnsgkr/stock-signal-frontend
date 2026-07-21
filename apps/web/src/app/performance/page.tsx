@@ -7,6 +7,7 @@ import ReactECharts from 'echarts-for-react';
 const PROXY = '/api/proxy';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
+import { fmtMarketDate, marketTimeZoneLabel } from '@/lib/marketTime';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface Overview {
@@ -62,8 +63,16 @@ function pct(v: number | null | undefined, digits = 1) {
   return `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
 }
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+/**
+ * 주차 라벨은 서버가 UTC 기준으로 묶은 값이라 UTC 로 표시한다.
+ * 로컬 타임존으로 찍으면 주 시작(월요일)이 앞뒤로 밀린다.
+ */
+function fmtWeek(d: string) {
+  return new Date(d).toLocaleDateString('ko-KR', {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 /**
@@ -147,7 +156,7 @@ function TimelineChart({ data }: { data: TimelinePoint[] }) {
     return () => ro.disconnect();
   }, []);
 
-  const weeks = data.map(d => fmtDate(d.week));
+  const weeks = data.map(d => fmtWeek(d.week));
   const signals = data.map(d => d.avgReturn7d != null ? +(d.avgReturn7d * 100).toFixed(2) : null);
   const benchmarks = data.map(d => d.avgBenchmark7d != null ? +(d.avgBenchmark7d * 100).toFixed(2) : null);
 
@@ -390,7 +399,9 @@ export default function PerformancePage() {
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">30일</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">7일 적중</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">알파(7d)</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">추천일</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
+                      추천일 <span className="font-normal text-[10px] opacity-70">({marketTimeZoneLabel(market)})</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -409,7 +420,7 @@ export default function PerformancePage() {
                       <td className="px-3 py-2 text-right"><ReturnCell v={r.return30d} recommendedAt={r.recommendedAt} horizon={30} /></td>
                       <td className="px-3 py-2 text-center"><HitBadge  hit={r.hit7d}   recommendedAt={r.recommendedAt} horizon={7} /></td>
                       <td className="px-3 py-2 text-right"><ReturnCell v={r.alpha7d}   recommendedAt={r.recommendedAt} horizon={7} /></td>
-                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtDate(r.recommendedAt)}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">{fmtMarketDate(r.recommendedAt, market)}</td>
                     </tr>
                   ))}
                   {recs.length === 0 && (

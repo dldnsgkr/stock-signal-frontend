@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingDown, ArrowRight } from 'lucide-react';
+import { fmtMarketDateFull } from '@/lib/marketTime';
 import { formatPrice, formatPercent, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -305,7 +306,7 @@ function RecommendationsContent() {
           <p className="text-sm text-muted-foreground mt-0.5">
             {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
             {runInfo?.executedAt && !isSellTab
-              ? ` · 분석 ${new Date(runInfo.executedAt).toLocaleDateString('ko-KR')} · ${runInfo.modelVersion}`
+              ? ` · 분석 ${fmtMarketDateFull(runInfo.executedAt, market)} · ${runInfo.modelVersion}`
               : ''}
           </p>
         </div>
