@@ -70,6 +70,19 @@ function toDateStr(daysAgo: number): string {
   return d.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
+const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+/**
+ * KRX 가 준 'YYYY-MM-DD' 는 이미 한국 날짜다. Date 로 파싱하면 로컬 타임존만큼
+ * 밀릴 수 있으므로 UTC 로 고정해 요일만 뽑는다.
+ */
+function fmtFullDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return isoDate;
+  const wd = WEEKDAY_KO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${m}월 ${d}일 (${wd})`;
+}
+
 // 억원 단위로 변환 + 부호 포함 포맷
 function fmtValue(v: number, short = false): string {
   if (v === 0) return '0';
@@ -176,7 +189,11 @@ export default function InvestorTradingPage() {
     tooltip: {
       trigger: 'axis',
       formatter: (params: any[]) => {
-        return params.map((p: any) =>
+        const row = chartRows[params[0]?.dataIndex ?? -1];
+        const header = row
+          ? `<div style="margin-bottom:4px;font-weight:600">${fmtFullDate(row.date)}</div>`
+          : '';
+        return header + params.map((p: any) =>
           `${p.marker}${p.seriesName}: <strong>${fmtValue(p.value)}</strong>`
         ).join('<br/>');
       },
@@ -442,7 +459,9 @@ export default function InvestorTradingPage() {
           <Card className="min-w-0 overflow-hidden">
             <div className="border-b px-4 py-3">
               <p className="text-sm font-semibold">순매수 추이</p>
-              <p className="text-xs text-muted-foreground">개인·기타 / 외국인 / 기관합계 일별 순매수</p>
+              <p className="text-xs text-muted-foreground">
+                개인·기타 / 외국인 / 기관합계 일별 순매수 · 거래일만 표시하므로 주말·휴장일은 나타나지 않습니다
+              </p>
             </div>
             <div ref={containerRef} className="px-2 py-3" style={{ overflow: 'hidden' }}>
               <ReactECharts ref={chartRef} option={chartOption} style={{ height: 280 }} />
