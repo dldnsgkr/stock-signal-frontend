@@ -43,6 +43,17 @@ export function fmtMarketDateFull(d: string | Date | null | undefined, market: M
   });
 }
 
+/** "2026. 07. 17." 형태. lib/utils formatDate 와 같은 표기의 시장 타임존판. */
+export function fmtMarketDateNum(d: string | Date | null | undefined, market: MarketCode): string {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('ko-KR', {
+    timeZone: marketTimeZone(market),
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
+
 /** "7월 17일 18:08" 형태. 실행 시각처럼 시분이 필요한 곳. */
 export function fmtMarketDateTime(d: string | Date | null | undefined, market: MarketCode): string {
   if (!d) return '-';

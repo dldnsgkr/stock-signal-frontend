@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { SignalBadge } from './SignalBadge';
-import { formatPrice, formatPercent, formatDate } from '@/lib/utils';
+import { formatPrice, formatPercent } from '@/lib/utils';
+import { fmtMarketDateNum } from '@/lib/marketTime';
 
 interface RecommendationCardProps {
   recommendation: {
@@ -60,7 +61,7 @@ export function RecommendationCard({ recommendation: rec }: RecommendationCardPr
         )}
 
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{formatDate(rec.recommendedAt)}</span>
+          <span className="text-xs text-muted-foreground">{fmtMarketDateNum(rec.recommendedAt, market)}</span>
           <Link
             href={`/stocks/${rec.stock.symbol}`}
             className="flex items-center gap-0.5 text-xs text-primary hover:underline"

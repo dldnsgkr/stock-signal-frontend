@@ -5,8 +5,8 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingDown, ArrowRight } from 'lucide-react';
-import { fmtMarketDateFull } from '@/lib/marketTime';
-import { formatPrice, formatPercent, formatDate } from '@/lib/utils';
+import { fmtMarketDateFull, fmtMarketDateNum } from '@/lib/marketTime';
+import { formatPrice, formatPercent } from '@/lib/utils';
 import Link from 'next/link';
 
 interface Recommendation {
@@ -135,8 +135,8 @@ function SellSignalCard({ signal }: { signal: SellSignal }) {
 
         {/* 날짜 */}
         <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t pt-2">
-          <span>매수 {formatDate(signal.buyDate)}</span>
-          <span>청산 {formatDate(signal.sellDate)}</span>
+          <span>매수 {fmtMarketDateNum(signal.buyDate, market)}</span>
+          <span>청산 {fmtMarketDateNum(signal.sellDate, market)}</span>
         </div>
       </div>
     </Link>

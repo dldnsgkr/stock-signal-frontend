@@ -4,7 +4,8 @@ import { SignalBadge } from '@/components/recommendation/SignalBadge';
 import { PriceChartSection } from '@/components/charts/PriceChartSection';
 import { ScoreRadarChart } from '@/components/charts/ScoreRadarChart';
 import { NewsItem } from '@/components/news/NewsItem';
-import { formatPrice, formatDate, formatPercent } from '@/lib/utils';
+import { formatPrice, formatPercent } from '@/lib/utils';
+import { fmtMarketDateNum } from '@/lib/marketTime';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
 import { ScoreTrendChart } from '@/components/charts/ScoreTrendChart';
@@ -139,7 +140,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                   ))}
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground">
-                  진입가: {formatPrice(latestRec.entryPrice, marketCode)} · {formatDate(latestRec.recommendedAt)}
+                  진입가: {formatPrice(latestRec.entryPrice, marketCode)} · {fmtMarketDateNum(latestRec.recommendedAt, marketCode)}
                 </div>
               </CardContent>
             </Card>
@@ -313,7 +314,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                             <SignalBadge action="BUY" />
                             <span className="font-medium">{formatPrice(rec.entryPrice, marketCode)}</span>
                           </div>
-                          <span className="text-muted-foreground">{formatDate(rec.recommendedAt)}</span>
+                          <span className="text-muted-foreground">{fmtMarketDateNum(rec.recommendedAt, marketCode)}</span>
                         </div>
 
                         {/* 청산 행 (SELL 시그널 있을 때) */}
@@ -329,7 +330,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                                 </>
                               )}
                             </div>
-                            <span className="text-muted-foreground">{formatDate(sell.generatedAt)}</span>
+                            <span className="text-muted-foreground">{fmtMarketDateNum(sell.generatedAt, marketCode)}</span>
                           </div>
                         )}
 
