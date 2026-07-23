@@ -13,10 +13,10 @@ import { fmtMarketDate, marketTimeZoneLabel } from '@/lib/marketTime';
 interface Overview {
   period: string;
   totalRecommendations: number;
-  hitRate7d: number;
-  hitRate30d: number;
-  avgReturn7d: number;
-  avgReturn30d: number;
+  hitRate7d: number | null;
+  hitRate30d: number | null;
+  avgReturn7d: number | null;
+  avgReturn30d: number | null;
 }
 
 interface TimelinePoint {

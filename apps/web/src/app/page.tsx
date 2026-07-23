@@ -108,13 +108,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-md border p-3">
                     <p className="text-xs text-muted-foreground">7일 평균 수익률</p>
-                    <p className={`text-lg font-bold ${perf.avgReturn7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-lg font-bold ${perf.avgReturn7d == null ? '' : perf.avgReturn7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {perf.avgReturn7d != null ? `${(perf.avgReturn7d * 100).toFixed(2)}%` : '-'}
                     </p>
                   </div>
                   <div className="rounded-md border p-3">
                     <p className="text-xs text-muted-foreground">30일 평균 수익률</p>
-                    <p className={`text-lg font-bold ${perf.avgReturn30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-lg font-bold ${perf.avgReturn30d == null ? '' : perf.avgReturn30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {perf.avgReturn30d != null ? `${(perf.avgReturn30d * 100).toFixed(2)}%` : '-'}
                     </p>
                   </div>
