@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Zap, History, Terminal, Server, BarChart2, LogOut } from 'lucide-react';
+import { Zap, History, Terminal, Server, BarChart2, FlaskConical, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -11,6 +11,7 @@ const tabs = [
   { href: '/admin/logs',    label: '서버 로그',       icon: Terminal },
   { href: '/admin/system',  label: '시스템 상태',     icon: Server },
   { href: '/admin/scoring', label: '스코어링 분석',   icon: BarChart2 },
+  { href: '/admin/backtest', label: '백테스트',       icon: FlaskConical },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

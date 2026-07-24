@@ -19,7 +19,18 @@ export async function POST(req: NextRequest) {
   const url = `${API_URL}${endpoint}${query ? `?${query}` : ''}`;
 
   try {
-    const res = await fetch(url, { method: 'POST' });
+    // JSON body 가 있으면 그대로 전달 (백테스트 등 body 기반 POST)
+    let body: string | undefined;
+    try {
+      const json = await req.json();
+      body = JSON.stringify(json);
+    } catch {
+      body = undefined;
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      ...(body ? { headers: { 'Content-Type': 'application/json' }, body } : {}),
+    });
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
