@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 
 type MarketFilter = 'ALL' | 'KOSPI' | 'KOSDAQ';
-type Investor = 'foreign' | 'institution';
+type Investor = 'foreign' | 'institution' | 'individual';
 
 interface RankEntry {
   symbol: string;
@@ -30,7 +30,7 @@ interface FlowRanking {
 }
 
 const DAYS_OPTIONS = [5, 20, 60] as const;
-const INVESTOR_LABEL: Record<Investor, string> = { foreign: '외국인', institution: '기관' };
+const INVESTOR_LABEL: Record<Investor, string> = { foreign: '외국인', institution: '기관', individual: '개인' };
 
 function fmtNet(v: number): string {
   const sign = v > 0 ? '+' : '';
