@@ -355,7 +355,10 @@ export default function SimulationPage() {
           <Card>
             <div className="border-b px-4 py-3 flex items-center gap-2">
               <p className="text-sm font-semibold">포지션 목록</p>
-              <span className="text-xs text-muted-foreground">{STRATEGY_META[strategy].label} · {positions.length}건</span>
+              <span className="text-xs text-muted-foreground">
+                {STRATEGY_META[strategy].label} · 최근 {positions.length}건 표시
+                {stats?.count != null && stats.count > positions.length && ` (통계 카드는 기간 전체 ${stats.count.toLocaleString()}건 기준)`}
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-xs">
