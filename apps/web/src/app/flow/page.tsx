@@ -14,6 +14,9 @@ interface RankEntry {
   sector: string | null;
   totalNet: number;
   activeDays: number;
+  streak: number;
+  daily: number[];
+  intensity: number | null;
   currentPrice: number | null;
   changeRate: number | null;
 }
@@ -51,6 +54,41 @@ function fmtChange(v: number | null): string {
   return `${sign}${Math.abs(v).toFixed(2)}%`;
 }
 
+/** 일별 순매수 미니 바 차트. 양수=파랑(순매수), 음수=빨강(순매도) — 표 색상 관례와 동일. */
+function Sparkline({ daily }: { daily: number[] }) {
+  if (!daily.length) return <span className="text-muted-foreground">-</span>;
+  const W = 84;
+  const H = 22;
+  const mid = H / 2;
+  const maxAbs = Math.max(...daily.map(Math.abs), 1);
+  const barW = Math.max(1, Math.floor(W / daily.length) - 1);
+  const step = W / daily.length;
+  return (
+    <svg width={W} height={H} className="block" aria-hidden>
+      <line x1={0} y1={mid} x2={W} y2={mid} stroke="currentColor" strokeOpacity={0.15} />
+      {daily.map((v, i) => {
+        const h = Math.max(1, (Math.abs(v) / maxAbs) * (mid - 1));
+        return (
+          <rect
+            key={i}
+            x={i * step}
+            y={v >= 0 ? mid - h : mid}
+            width={barW}
+            height={h}
+            fill={v >= 0 ? '#2563eb' : '#ef4444'}
+            fillOpacity={0.8}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+function fmtIntensity(v: number | null): string {
+  if (v == null) return '-';
+  return `${(Math.abs(v) * 100).toFixed(1)}%`;
+}
+
 function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }) {
   return (
     <div className="overflow-x-auto">
@@ -58,8 +96,10 @@ function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="px-3 py-2 text-left font-medium">종목</th>
+            <th className="px-3 py-2 text-left font-medium">일별 추이</th>
             <th className="px-3 py-2 text-right font-medium">누적 순매수</th>
-            <th className="px-3 py-2 text-right font-medium">현재가</th>
+            <th className="px-3 py-2 text-right font-medium" title="구간 거래대금 대비 순매수 비중">강도</th>
+            <th className="px-3 py-2 text-right font-medium">연속</th>
             <th className="px-3 py-2 text-right font-medium">등락률</th>
           </tr>
         </thead>
@@ -70,17 +110,32 @@ function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }
                 <Link href={`/stocks/${s.symbol}`} className="flex items-center gap-2 hover:underline">
                   <span className="w-5 text-muted-foreground tabular-nums">{i + 1}</span>
                   <span className="min-w-0">
-                    <span className="font-medium block truncate max-w-[160px]">{s.name}</span>
+                    <span className="font-medium block truncate max-w-[140px]">{s.name}</span>
                     <span className="text-muted-foreground">{s.symbol}</span>
                   </span>
                 </Link>
               </td>
+              <td className="px-3 py-2"><Sparkline daily={s.daily} /></td>
               <td className={`px-3 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${
                 type === 'buy' ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'
               }`}>
                 {fmtNet(s.totalNet)}
+                <span className="block font-normal text-muted-foreground">{fmtPrice(s.currentPrice)}</span>
               </td>
-              <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{fmtPrice(s.currentPrice)}</td>
+              <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{fmtIntensity(s.intensity)}</td>
+              <td className="px-3 py-2 text-right whitespace-nowrap">
+                {s.streak >= 3 ? (
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    type === 'buy'
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                      : 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300'
+                  }`}>
+                    {s.streak}일 연속
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground tabular-nums">{s.streak}일</span>
+                )}
+              </td>
               <td className={`px-3 py-2 text-right tabular-nums whitespace-nowrap ${changeColor(s.changeRate)}`}>
                 {fmtChange(s.changeRate)}
               </td>
@@ -125,7 +180,8 @@ export default function FlowRankingPage() {
         <div>
           <h1 className="text-xl font-bold">수급 랭킹</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            최근 N거래일 누적 순매수 거래대금 상위·하위 (자체 적재 데이터 · 단위: 억원)
+            기간 <b>누적</b> 순매수 랭킹 — 하루 반짝이 아닌 꾸준한 매집·이탈을 포착합니다
+            (당일 기준은 투자자·외국인 동향 참조)
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -200,7 +256,8 @@ export default function FlowRankingPage() {
       )}
 
       <p className="text-xs text-muted-foreground text-center pb-2">
-        * 출처: KRX (일별 적재) · 상장폐지·거래정지 종목은 제외될 수 있습니다
+        * 출처: KRX (일별 적재) · 강도 = 구간 거래대금 대비 순매수 비중 · 연속 = 최근일부터 같은 방향 연속 일수
+        · 상장폐지·거래정지 종목은 제외될 수 있습니다
       </p>
     </div>
   );
