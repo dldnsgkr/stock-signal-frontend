@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { RefreshCw, Menu, LogIn, LogOut } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
+import { PushToggle } from './PushToggle';
 
 const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/sectors', '/performance', '/simulation'];
 
@@ -67,6 +68,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         </span>
       </div>
       <div className="flex items-center gap-2">
+        <PushToggle />
         <button
           onClick={() => router.refresh()}
           className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted"
