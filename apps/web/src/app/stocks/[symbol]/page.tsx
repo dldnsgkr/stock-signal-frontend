@@ -9,6 +9,7 @@ import { fmtMarketDateNum } from '@/lib/marketTime';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
 import { ScoreTrendChart } from '@/components/charts/ScoreTrendChart';
+import { InvestorFlowChart } from '@/components/charts/InvestorFlowChart';
 import { TrendingDown, ArrowRight } from 'lucide-react';
 
 interface PageProps {
@@ -25,10 +26,13 @@ async function getStockData(symbol: string) {
       api.get<any[]>(`/stocks/${symbol}/score-history?days=90`).catch(() => []),
     ]);
     const market = stock?.market?.code ?? 'US';
-    const technicalLevels = await api.get<any>(
-      `/stocks/${symbol}/technical-levels?market=${market}`,
-    ).catch(() => null);
-    return { stock, prices, news, recommendations, scoreHistory, technicalLevels };
+    const [technicalLevels, investorFlow] = await Promise.all([
+      api.get<any>(`/stocks/${symbol}/technical-levels?market=${market}`).catch(() => null),
+      market === 'KR'
+        ? api.get<any>(`/stocks/${symbol}/investor-flow?days=90`).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+    return { stock, prices, news, recommendations, scoreHistory, technicalLevels, investorFlow };
   } catch {
     return null;
   }
@@ -46,7 +50,7 @@ export default async function StockDetailPage({ params }: PageProps) {
     );
   }
 
-  const { stock, prices, news, recommendations, scoreHistory, technicalLevels } = data;
+  const { stock, prices, news, recommendations, scoreHistory, technicalLevels, investorFlow } = data;
   const latestRec = recommendations?.[0];
   const marketCode = stock.market?.code ?? 'US';
   const targets    = technicalLevels?.priceTargets ?? null;
@@ -88,6 +92,18 @@ export default async function StockDetailPage({ params }: PageProps) {
               />
             </CardContent>
           </Card>
+
+          {investorFlow?.flows?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>투자자 수급 (최근 90일)</CardTitle>
+                <p className="text-xs text-muted-foreground">외국인·기관 순매수 거래대금 · 거래일만 표시</p>
+              </CardHeader>
+              <CardContent>
+                <InvestorFlowChart flows={investorFlow.flows} />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle>관련 뉴스</CardTitle></CardHeader>
