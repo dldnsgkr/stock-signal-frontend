@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 interface Recommendation {
   id: number;
-  stock: { symbol: string; name: string; sector: string | null; market?: { code: string } | null };
+  stock: { symbol: string; name: string; sector: string | null; market?: string | { code: string } | null };
   action: string;
   score: number;
   confidence: number;

@@ -8,7 +8,7 @@ import { fmtMarketDateNum } from '@/lib/marketTime';
 interface RecommendationCardProps {
   recommendation: {
     id: number;
-    stock: { symbol: string; name: string; sector: string | null; market?: { code: string } | null };
+    stock: { symbol: string; name: string; sector: string | null; market?: string | { code: string } | null };
     action: string;
     score: number;
     confidence: number;
@@ -20,7 +20,8 @@ interface RecommendationCardProps {
 }
 
 export function RecommendationCard({ recommendation: rec }: RecommendationCardProps) {
-  const market = rec.stock.market?.code ?? 'US';
+  // API는 market을 문자열('KR')로 내려주지만, 과거 객체 형태({ code })도 방어적으로 처리
+  const market = typeof rec.stock.market === 'string' ? rec.stock.market : rec.stock.market?.code ?? 'US';
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-4">

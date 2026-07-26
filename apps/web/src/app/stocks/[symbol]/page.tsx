@@ -8,6 +8,7 @@ import { formatPrice, formatPercent } from '@/lib/utils';
 import { fmtMarketDateNum } from '@/lib/marketTime';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
+import { WatchlistButton } from '@/components/stocks/WatchlistButton';
 import { ScoreTrendChart } from '@/components/charts/ScoreTrendChart';
 import { InvestorFlowChart } from '@/components/charts/InvestorFlowChart';
 import { TrendingDown, ArrowRight } from 'lucide-react';
@@ -61,10 +62,11 @@ export default async function StockDetailPage({ params }: PageProps) {
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <BackButton />
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">{stock.symbol}</h1>
             {latestRec && <SignalBadge action={latestRec.action} />}
+            <span className="ml-auto"><WatchlistButton symbol={stock.symbol} /></span>
           </div>
           <p className="text-sm text-muted-foreground">
             {stock.name} · {stock.sector} · {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
