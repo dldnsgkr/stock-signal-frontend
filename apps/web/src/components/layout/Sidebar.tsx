@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid, Waves, Star, SlidersHorizontal, Bell } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid, Waves, Star, SlidersHorizontal, Bell, GitCompare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/',                label: '대시보드',    icon: Home,        keepMarket: true  },
   { href: '/recommendations', label: '시그널 목록', icon: TrendingUp,  keepMarket: true  },
   { href: '/stocks',          label: '종목 검색',   icon: Search,      keepMarket: true  },
+  { href: '/compare',         label: '종목 비교',   icon: GitCompare,  keepMarket: false },
   { href: '/watchlist',       label: '관심종목',    icon: Star,        keepMarket: false },
   { href: '/notifications',   label: '알림 이력',   icon: Bell,        keepMarket: false },
   { href: '/sectors',         label: '섹터 분석',   icon: LayoutGrid,  keepMarket: true  },

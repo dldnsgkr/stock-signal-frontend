@@ -66,7 +66,12 @@ export default async function StockDetailPage({ params }: PageProps) {
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">{stock.symbol}</h1>
             {latestRec && <SignalBadge action={latestRec.action} />}
-            <span className="ml-auto"><WatchlistButton symbol={stock.symbol} /></span>
+            <span className="ml-auto flex items-center gap-2">
+              <a href={`/compare?symbols=${stock.symbol}`} className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted">
+                비교
+              </a>
+              <WatchlistButton symbol={stock.symbol} />
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
             {stock.name} · {stock.sector} · {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
