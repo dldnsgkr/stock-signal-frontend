@@ -3,7 +3,6 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { RefreshCw, Menu, LogIn, LogOut } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import Image from 'next/image';
 import { PushToggle } from './PushToggle';
 
 const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/sectors', '/performance', '/simulation'];
@@ -80,12 +79,17 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         {session ? (
           <div className="flex items-center gap-2">
             {session.user.image && (
-              <Image
+              // 서드파티(Google) 아바타는 일반 img로 렌더 — next/image 호스트 화이트리스트
+              // 의존을 제거하고, 로드 실패 시 조용히 숨겨 레이아웃이 깨지지 않게 한다.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 src={session.user.image}
                 alt={session.user.name ?? '프로필'}
                 width={28}
                 height={28}
-                className="rounded-full ring-1 ring-border"
+                referrerPolicy="no-referrer"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                className="h-7 w-7 rounded-full ring-1 ring-border object-cover"
               />
             )}
             <span className="hidden sm:block text-xs text-muted-foreground max-w-[80px] truncate">
