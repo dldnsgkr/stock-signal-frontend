@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
 import { formatNumber } from '@/lib/utils';
 import { TrendingUp, Activity } from 'lucide-react';
+import { DefaultMarketRedirect } from '@/components/DefaultMarketRedirect';
 
 interface PageProps {
   searchParams: Promise<{ market?: string }>;
@@ -40,6 +41,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
+      <DefaultMarketRedirect />
       <div>
         <h1 className="text-xl font-bold">대시보드</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{today} · {marketLabel} 시장</p>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid, Waves, Star } from 'lucide-react';
+import { BarChart2, TrendingUp, Search, Award, Settings, Home, FlaskConical, Users, Globe, LayoutGrid, Waves, Star, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/investor-trading',label: '투자자 동향', icon: Users,       keepMarket: false },
   { href: '/foreign-trading', label: '외국인 동향', icon: Globe,       keepMarket: false },
   { href: '/flow',            label: '수급 랭킹',   icon: Waves,       keepMarket: false },
+  { href: '/settings',        label: '설정',        icon: SlidersHorizontal, keepMarket: false },
   { href: '/admin',           label: '관리자',      icon: Settings,    keepMarket: false },
 ];
 
