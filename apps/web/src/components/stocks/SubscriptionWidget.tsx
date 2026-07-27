@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Bell, BellOff, Loader2, CheckCircle, X } from 'lucide-react';
 
 interface Props {
@@ -11,21 +12,41 @@ interface Props {
 const EMAIL_KEY = 'stock_signal_sub_email';
 
 export function SubscriptionWidget({ symbol, stockName }: Props) {
+  const { data: session, status: authStatus } = useSession();
+  const authed = authStatus === 'authenticated';
+  const sessionEmail = session?.user?.email ?? '';
+
   const [email, setEmail]         = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [status, setStatus]       = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage]     = useState('');
 
-  // 저장된 이메일 로드 + 구독 여부 확인
+  // 로그인: 세션 이메일로 자동 확인 / 비로그인: 저장된 이메일 로드
   useEffect(() => {
-    const saved = localStorage.getItem(EMAIL_KEY);
-    if (saved) {
-      setEmail(saved);
-      checkSubscription(saved);
+    if (authStatus === 'loading') return;
+    if (authed) {
+      setEmail(sessionEmail);
+      checkAuthed();
+    } else {
+      const saved = localStorage.getItem(EMAIL_KEY);
+      if (saved) {
+        setEmail(saved);
+        checkSubscription(saved);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol]);
+  }, [symbol, authStatus]);
+
+  // 로그인 유저: authed 라우트로 구독 목록 확인
+  async function checkAuthed() {
+    try {
+      const res = await fetch('/api/subscriptions');
+      if (!res.ok) return;
+      const list: { symbol: string }[] = await res.json();
+      setSubscribed(Array.isArray(list) && list.some(s => s.symbol === symbol));
+    } catch { /* ignore */ }
+  }
 
   async function checkSubscription(em: string) {
     try {
@@ -37,7 +58,7 @@ export function SubscriptionWidget({ symbol, stockName }: Props) {
   }
 
   async function handleSubscribe() {
-    if (!email.trim() || !email.includes('@')) {
+    if (!authed && (!email.trim() || !email.includes('@'))) {
       setStatus('error');
       setMessage('올바른 이메일 주소를 입력해주세요');
       return;
@@ -45,17 +66,23 @@ export function SubscriptionWidget({ symbol, stockName }: Props) {
     setLoading(true);
     setStatus('idle');
     try {
-      const res = await fetch('/api/proxy?endpoint=/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), symbol }),
-      });
+      const res = authed
+        ? await fetch('/api/subscriptions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol }),
+          })
+        : await fetch('/api/proxy?endpoint=/subscriptions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), symbol }),
+          });
       const data = await res.json();
       if (!res.ok) {
         setStatus('error');
         setMessage(data.message ?? '구독에 실패했습니다');
       } else {
-        localStorage.setItem(EMAIL_KEY, email.trim());
+        if (!authed) localStorage.setItem(EMAIL_KEY, email.trim());
         setSubscribed(true);
         setStatus('success');
         setMessage(`${symbol} BUY 시그널 발생 시 이메일로 알려드립니다`);
@@ -72,11 +99,17 @@ export function SubscriptionWidget({ symbol, stockName }: Props) {
     setLoading(true);
     setStatus('idle');
     try {
-      const res = await fetch('/api/proxy?endpoint=/subscriptions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), symbol }),
-      });
+      const res = authed
+        ? await fetch('/api/subscriptions', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol }),
+          })
+        : await fetch('/api/proxy?endpoint=/subscriptions', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), symbol }),
+          });
       if (res.ok) {
         setSubscribed(false);
         setStatus('success');
@@ -114,6 +147,20 @@ export function SubscriptionWidget({ symbol, stockName }: Props) {
               ? <Loader2 className="h-3 w-3 animate-spin" />
               : <BellOff className="h-3 w-3" />}
             알림 해제
+          </button>
+        </div>
+      ) : authed ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {stockName}에 BUY 시그널이 발생하면 <span className="font-medium text-foreground">{sessionEmail}</span> 로 알려드립니다
+          </p>
+          <button
+            onClick={handleSubscribe}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bell className="h-3 w-3" />}
+            알림 받기
           </button>
         </div>
       ) : (

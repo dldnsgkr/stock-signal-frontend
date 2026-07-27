@@ -94,7 +94,7 @@ export default function WatchlistPage() {
       <div>
         <h1 className="text-xl font-bold">관심종목</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          종목 상세에서 ⭐ 관심등록을 누르면 여기에 모입니다
+          종목 상세에서 ⭐ 관심등록 → 여기에 모입니다. 상단 🔔 알림을 켜면 관심종목에 BUY/SELL 시그널이 뜰 때 푸시로 받습니다.
         </p>
       </div>
 

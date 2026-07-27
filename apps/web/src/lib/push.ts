@@ -50,7 +50,8 @@ export async function subscribePush(): Promise<boolean> {
     applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
   });
 
-  const res = await fetch('/api/proxy?endpoint=/push/subscribe', {
+  // 세션 userId 주입을 위해 authed 라우트 경유 (로그인 시 관심종목 타겟 알림 활성)
+  const res = await fetch('/api/push/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(sub.toJSON()),
