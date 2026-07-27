@@ -33,11 +33,36 @@ function fmtChange(v: number | null): string {
   return `${sign}${Math.abs(v).toFixed(2)}%`;
 }
 
+type SortKey = 'added' | 'score' | 'change' | 'signal';
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'added', label: '추가순' },
+  { key: 'signal', label: '시그널' },
+  { key: 'score', label: '점수' },
+  { key: 'change', label: '등락률' },
+];
+// 시그널 정렬 우선순위 (BUY 먼저)
+const ACTION_RANK: Record<string, number> = { BUY: 0, WATCH: 1, AVOID: 2 };
+
 export default function WatchlistPage() {
   const { status } = useSession();
   const [items, setItems] = useState<WatchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortKey>('added');
+
+  const sortedItems = [...items].sort((a, b) => {
+    switch (sort) {
+      case 'score':  return (b.latestScore ?? -1) - (a.latestScore ?? -1);
+      case 'change': return (b.changeRate ?? -Infinity) - (a.changeRate ?? -Infinity);
+      case 'signal': {
+        const ra = ACTION_RANK[a.latestAction ?? ''] ?? 3;
+        const rb = ACTION_RANK[b.latestAction ?? ''] ?? 3;
+        if (ra !== rb) return ra - rb;
+        return (b.latestScore ?? -1) - (a.latestScore ?? -1);
+      }
+      default: return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+    }
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,6 +135,23 @@ export default function WatchlistPage() {
         </Card>
       ) : (
         <Card className="min-w-0">
+          {/* 정렬 */}
+          <div className="flex items-center gap-2 border-b px-3 py-2">
+            <span className="text-xs text-muted-foreground">{items.length}개 · 정렬</span>
+            <div className="flex gap-1 rounded-lg bg-muted p-0.5">
+              {SORT_OPTIONS.map(o => (
+                <button
+                  key={o.key}
+                  onClick={() => setSort(o.key)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    sort === o.key ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -124,7 +166,7 @@ export default function WatchlistPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map(item => (
+                {sortedItems.map(item => (
                   <tr key={item.symbol} className="border-b last:border-0 hover:bg-muted/40">
                     <td className="px-3 py-2.5">
                       <Link href={`/stocks/${item.symbol}`} className="hover:underline">

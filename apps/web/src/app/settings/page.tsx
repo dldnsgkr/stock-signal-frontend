@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2, LogIn, Check, Settings as SettingsIcon } from 'lucide-react';
+import { Loader2, LogIn, Check, Settings as SettingsIcon, Bell, BellOff } from 'lucide-react';
+import { pushSupported, isSubscribed, subscribePush, unsubscribePush } from '@/lib/push';
 
 interface UserSettings {
   defaultMarket: string;
@@ -119,6 +120,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* 웹푸시 채널 (이 기기) */}
+      <PushChannelCard />
+
       {/* 알림 조건 */}
       <Card>
         <CardContent className="pt-4 space-y-4">
@@ -166,6 +170,67 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// 이 기기의 웹푸시 구독 상태 관리 (권한 요청 → 구독/해제)
+function PushChannelCard() {
+  const [supported, setSupported] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pushSupported()) return;
+    setSupported(true);
+    isSubscribed().then(setSubscribed);
+  }, []);
+
+  async function toggle() {
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      if (subscribed) { await unsubscribePush(); setSubscribed(false); }
+      else { await subscribePush(); setSubscribed(true); }
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : '알림 설정 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-4 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold">웹푸시 알림 (이 기기)</p>
+            <p className="text-xs text-muted-foreground">
+              {supported
+                ? '이 브라우저에서 알림을 받을지 설정합니다. 기기마다 따로 켜야 합니다.'
+                : '이 브라우저는 웹푸시를 지원하지 않습니다.'}
+            </p>
+          </div>
+          {supported && (
+            <button
+              onClick={toggle}
+              disabled={busy}
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs shrink-0 transition-colors ${
+                subscribed
+                  ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : subscribed ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+              {subscribed ? '켜짐 — 끄기' : '알림 켜기'}
+            </button>
+          )}
+        </div>
+        {err && <p className="text-xs text-red-500">{err}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
