@@ -112,7 +112,7 @@ function CompareInner() {
   const rows: { label: string; render: (it: CompareItem) => React.ReactNode }[] = [
     { label: '최신 시그널', render: it => it.action ? <SignalBadge action={it.action} /> : <span className="text-muted-foreground">-</span> },
     { label: '종합 점수', render: it => <span className="font-bold tabular-nums">{it.score != null ? it.score.toFixed(1) : '-'}</span> },
-    { label: '신뢰도', render: it => <span className="tabular-nums">{it.confidence != null ? `${it.confidence}%` : '-'}</span> },
+    { label: '신뢰도', render: it => <span className="tabular-nums cursor-help" title="세 전략의 일치도 기반 확신도 — 적중 확률이 아닙니다.">{it.confidence != null ? `${it.confidence}%` : '-'}</span> },
     { label: '현재가', render: it => <span className="tabular-nums">{it.currentPrice != null ? formatPrice(it.currentPrice, it.market ?? 'US') : '-'}</span> },
     { label: '등락률', render: it => <span className={`tabular-nums ${changeColor(it.changeRate)}`}>{fmtChange(it.changeRate)}</span> },
     { label: '점수 구성', render: it => it.scoreDetail ? (

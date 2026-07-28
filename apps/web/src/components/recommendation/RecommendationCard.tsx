@@ -29,7 +29,12 @@ export function RecommendationCard({ recommendation: rec }: RecommendationCardPr
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <SignalBadge action={rec.action} />
-              <span className="text-xs text-muted-foreground">신뢰도 {rec.confidence}%</span>
+              <span
+                className="text-xs text-muted-foreground cursor-help border-b border-dotted border-muted-foreground/40"
+                title="세 전략(모멘텀·가치·감성)의 일치도 기반 확신도입니다. 적중 확률이 아닙니다."
+              >
+                신뢰도 {rec.confidence}%
+              </span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="font-bold text-base">{rec.stock.symbol}</span>

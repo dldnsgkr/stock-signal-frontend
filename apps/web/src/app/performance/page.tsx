@@ -393,7 +393,7 @@ export default function PerformancePage() {
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">섹터</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">신뢰도</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="세 전략의 일치도 기반 확신도 — 적중 확률이 아닙니다.">신뢰도</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">진입가</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">7일</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">30일</th>
