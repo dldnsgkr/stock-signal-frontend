@@ -8,6 +8,7 @@ import { formatPrice, formatPercent } from '@/lib/utils';
 import { fmtMarketDateNum } from '@/lib/marketTime';
 import { BackButton } from '@/components/ui/BackButton';
 import { SubscriptionWidget } from '@/components/stocks/SubscriptionWidget';
+import { AiBriefing } from '@/components/stocks/AiBriefing';
 import { WatchlistButton } from '@/components/stocks/WatchlistButton';
 import { ScoreTrendChart } from '@/components/charts/ScoreTrendChart';
 import { InvestorFlowChart } from '@/components/charts/InvestorFlowChart';
@@ -137,6 +138,7 @@ export default async function StockDetailPage({ params }: PageProps) {
         </div>
 
         <div className="space-y-5">
+          <AiBriefing symbol={stock.symbol} market={marketCode} />
           {latestRec && (
             <Card>
               <CardHeader><CardTitle>최신 시그널 분석</CardTitle></CardHeader>
