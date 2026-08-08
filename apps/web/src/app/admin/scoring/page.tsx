@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 const ADMIN_PROXY = '/api/admin-proxy';
 
@@ -72,7 +74,9 @@ function hitRateBar(v: number | null) {
 }
 
 export default function ScoringAnalysisPage() {
-  const [market, setMarket] = useState<Market>('US');
+  // 시장 선택은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/admin/scoring', searchParams.get('market')) as Market;
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -97,14 +101,6 @@ export default function ScoringAnalysisPage() {
           <p className="text-xs text-muted-foreground mt-0.5">
             누적 BUY 시그널 성과 데이터로 임계값·전략 가중치를 검증합니다
           </p>
-        </div>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {(['US', 'KR'] as Market[]).map(m => (
-            <button key={m} onClick={() => setMarket(m)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-              {m === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}
-            </button>
-          ))}
         </div>
       </div>
 

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 type MarketCode = 'KOSPI' | 'KOSDAQ';
 
@@ -151,7 +153,9 @@ function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell'
 export default function ForeignTradingPage() {
   const today = toYYYYMMDD(new Date());
 
-  const [market, setMarket] = useState<MarketCode>('KOSPI');
+  // 시장 구분은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/foreign-trading', searchParams.get('submarket')) as MarketCode;
   // 초기에는 오늘로 설정하고, 마운트 시 자동으로 데이터 있는 날짜로 이동
   const [date, setDate] = useState(today);
   // 데이터가 실제로 존재하는 가장 최근 날짜 — date picker의 max로 사용
@@ -235,17 +239,6 @@ export default function ForeignTradingPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {/* 시장 토글 */}
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {(['KOSPI', 'KOSDAQ'] as MarketCode[]).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {m}
-              </button>
-            ))}
-          </div>
           {/* 날짜 선택 — max는 데이터가 실제로 있는 가장 최근 날짜 */}
           <input
             type="date"

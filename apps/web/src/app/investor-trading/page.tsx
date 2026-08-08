@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 type MarketCode = 'KOSPI' | 'KOSDAQ';
 type Period = '1w' | '1m' | '3m';
@@ -118,7 +120,9 @@ const INVESTOR_COLS = [
 ] as const;
 
 export default function InvestorTradingPage() {
-  const [market, setMarket] = useState<MarketCode>('KOSPI');
+  // 시장 구분은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/investor-trading', searchParams.get('submarket')) as MarketCode;
   const [period, setPeriod] = useState<Period>('1m');
   const [data, setData] = useState<TradingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -264,17 +268,6 @@ export default function InvestorTradingPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* 시장 토글 */}
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {(['KOSPI', 'KOSDAQ'] as MarketCode[]).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {m}
-              </button>
-            ))}
-          </div>
           {/* 기간 토글 */}
           <div className="flex gap-1 rounded-lg bg-muted p-1">
             {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([p, label]) => (

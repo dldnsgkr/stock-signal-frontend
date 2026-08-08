@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/Card';
 import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle, Database, Newspaper, TrendingUp, BarChart2, ShieldAlert } from 'lucide-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface Process {
@@ -253,7 +255,9 @@ function QualitySection({ quality, loading, onCheck }: {
   loading: boolean;
   onCheck: (market: string) => void;
 }) {
-  const [market, setMarket] = useState<'US' | 'KR'>('US');
+  // 시장 선택은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/admin/system', searchParams.get('market')) as 'US' | 'KR';
 
   return (
     <Card>
@@ -261,14 +265,6 @@ function QualitySection({ quality, loading, onCheck }: {
         <ShieldAlert className="h-4 w-4 text-muted-foreground" />
         <span className="font-semibold text-sm">데이터 품질 검사</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex gap-1 rounded-lg bg-muted p-0.5">
-            {(['US', 'KR'] as const).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${market === m ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                {m}
-              </button>
-            ))}
-          </div>
           <button
             onClick={() => onCheck(market)}
             disabled={loading}

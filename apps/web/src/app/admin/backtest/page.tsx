@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Loader2, Play } from 'lucide-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 const ADMIN_PROXY = '/api/admin-proxy';
 
@@ -73,7 +75,10 @@ function SummaryCard({ title, sub, acc, highlight }: {
 }
 
 export default function BacktestPage() {
-  const [market, setMarket] = useState<'US' | 'KR'>('KR');
+  // 시장 선택은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  // 이 화면만 기본값이 KR 이라 marketFilter 설정에서도 KR 을 기본으로 둔다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/admin/backtest', searchParams.get('market')) as 'US' | 'KR';
   const [horizon, setHorizon] = useState<'7d' | '30d'>('7d');
   const [weights, setWeights] = useState({ ...DEFAULT_WEIGHTS });
   const [mode, setMode] = useState<'threshold' | 'topn'>('threshold');
@@ -140,14 +145,6 @@ export default function BacktestPage() {
       <Card>
         <CardContent className="pt-4 space-y-4">
           <div className="flex flex-wrap gap-3">
-            <div className="flex gap-1 rounded-lg bg-muted p-1">
-              {(['KR', 'US'] as const).map(m => (
-                <button key={m} onClick={() => setMarket(m)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium ${market === m ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>
-                  {m === 'KR' ? '🇰🇷 KR' : '🇺🇸 US'}
-                </button>
-              ))}
-            </div>
             <div className="flex gap-1 rounded-lg bg-muted p-1">
               {(['7d', '30d'] as const).map(h => (
                 <button key={h} onClick={() => setHorizon(h)}

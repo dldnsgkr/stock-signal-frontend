@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { resolveForPath } from '@/lib/marketFilter';
 
 type MarketFilter = 'ALL' | 'KOSPI' | 'KOSDAQ';
 type Investor = 'foreign' | 'institution' | 'individual';
@@ -148,7 +150,9 @@ function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }
 }
 
 export default function FlowRankingPage() {
-  const [market, setMarket] = useState<MarketFilter>('ALL');
+  // 시장 구분은 최상단(TopBar) 필터가 URL 로 넘긴다 — 화면 안에 또 두지 않는다.
+  const searchParams = useSearchParams();
+  const market = resolveForPath('/flow', searchParams.get('submarket')) as MarketFilter;
   const [investor, setInvestor] = useState<Investor>('foreign');
   const [days, setDays] = useState<number>(20);
   const [data, setData] = useState<FlowRanking | null>(null);
@@ -185,16 +189,6 @@ export default function FlowRankingPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {(['ALL', 'KOSPI', 'KOSDAQ'] as MarketFilter[]).map(m => (
-              <button key={m} onClick={() => setMarket(m)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {m === 'ALL' ? '전체' : m}
-              </button>
-            ))}
-          </div>
           <div className="flex gap-1 rounded-lg bg-muted p-1">
             {(Object.keys(INVESTOR_LABEL) as Investor[]).map(inv => (
               <button key={inv} onClick={() => setInvestor(inv)}

@@ -4,8 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { RefreshCw, Menu, LogIn, LogOut } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { PushToggle } from './PushToggle';
-
-const MARKET_PAGES = ['/', '/recommendations', '/stocks', '/sectors', '/performance', '/simulation'];
+import { filterFor, resolveFilterValue } from '@/lib/marketFilter';
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -15,14 +14,22 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentMarket = searchParams.get('market') || 'US';
   const { data: session } = useSession();
 
-  const isMarketPage = MARKET_PAGES.some((p) => pathname === p);
+  // 필터는 여기 한 곳에서만 그린다. 각 화면은 URL 파라미터를 읽기만 한다.
+  const spec = filterFor(pathname);
+  const currentValue = spec ? resolveFilterValue(spec, searchParams.get(spec.param)) : '';
 
-  function switchMarket(market: string) {
+  // 안내 문구는 미국/한국일 때만 의미가 있다 (KOSPI/KOSDAQ 화면은 모두 한국장).
+  const currentMarket = resolveFilterValue(
+    { param: 'market', options: [{ value: 'US', label: '' }, { value: 'KR', label: '' }], fallback: 'US' },
+    searchParams.get('market'),
+  );
+
+  function switchFilter(value: string) {
+    if (!spec) return;
     const params = new URLSearchParams(searchParams.toString());
-    params.set('market', market);
+    params.set(spec.param, value);
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -38,32 +45,29 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        {isMarketPage && (
+        {spec && (
           <div className="flex rounded-lg border divide-x overflow-hidden text-xs font-medium">
-            <button
-              onClick={() => switchMarket('US')}
-              className={`px-3 py-1.5 transition-colors ${
-                currentMarket === 'US'
-                  ? 'bg-primary text-white'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              🇺🇸 미국
-            </button>
-            <button
-              onClick={() => switchMarket('KR')}
-              className={`px-3 py-1.5 transition-colors ${
-                currentMarket === 'KR'
-                  ? 'bg-primary text-white'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              🇰🇷 한국
-            </button>
+            {spec.options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => switchFilter(opt.value)}
+                className={`px-3 py-1.5 transition-colors ${
+                  currentValue === opt.value
+                    ? 'bg-primary text-white'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         )}
         <span className="hidden sm:block text-xs text-muted-foreground">
-          {currentMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
+          {spec?.param === 'submarket'
+            ? '장 마감 후 자동 갱신 (KST 기준)'
+            : currentMarket === 'KR'
+              ? '장 마감 후 자동 갱신 (KST 기준)'
+              : '장 마감 후 자동 갱신 (ET 기준)'}
         </span>
       </div>
       <div className="flex items-center gap-2">

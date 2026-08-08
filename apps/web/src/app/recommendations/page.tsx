@@ -282,13 +282,7 @@ function RecommendationsContent() {
     return () => observer.disconnect();
   }, [hasMore, nextPage, load, isSellTab]);
 
-  function setMarketFilter(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('market', value);
-    params.delete('action');
-    router.push(`${pathname}?${params.toString()}`);
-  }
-
+  // 시장 전환은 최상단(TopBar) 필터가 담당한다 — 화면 안에 또 두지 않는다.
   function setActionFilter(value: string | undefined) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set('action', value);
@@ -309,19 +303,6 @@ function RecommendationsContent() {
               ? ` · 분석 ${fmtMarketDateFull(runInfo.executedAt, market)} · ${runInfo.modelVersion}`
               : ''}
           </p>
-        </div>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {(['US', 'KR'] as const).map(m => (
-            <button
-              key={m}
-              onClick={() => setMarketFilter(m)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                market === m ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {m === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}
-            </button>
-          ))}
         </div>
       </div>
 
