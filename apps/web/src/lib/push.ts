@@ -99,6 +99,8 @@ export async function sendTestNotification(): Promise<void> {
     body: '이 알림이 보이면 정상입니다. 안 보이면 아래 안내를 확인하세요.',
     tag: `test-${Date.now()}`,   // 같은 tag 는 기존 알림을 교체해 새로 안 뜬다
     requireInteraction: true,    // 자동으로 사라지지 않게 — 놓치는 걸 막는다
+    icon: '/icon-192.png',       // 없으면 브라우저 기본 아이콘이 뜬다
+    badge: '/badge-96.png',
     data: { url: '/settings' },
   });
 }
