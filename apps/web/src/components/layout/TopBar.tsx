@@ -20,11 +20,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const spec = filterFor(pathname);
   const currentValue = spec ? resolveFilterValue(spec, searchParams.get(spec.param)) : '';
 
-  // 안내 문구는 미국/한국일 때만 의미가 있다 (KOSPI/KOSDAQ 화면은 모두 한국장).
-  const currentMarket = resolveFilterValue(
-    { param: 'market', options: [{ value: 'US', label: '' }, { value: 'KR', label: '' }], fallback: 'US' },
-    searchParams.get('market'),
-  );
+  // 안내 문구가 볼 시장. **필터가 가리키는 값과 반드시 같아야 한다** —
+  // URL 의 market 만 보면 백테스트처럼 기본값이 KR 인 화면에서
+  // 필터는 '한국'인데 문구는 '(ET 기준)'으로 어긋난다.
+  const hintMarket =
+    spec?.param === 'market' ? currentValue
+      : spec?.param === 'submarket' ? 'KR'          // KOSPI/KOSDAQ 화면은 모두 한국장
+        : searchParams.get('market') === 'KR' ? 'KR' : 'US';
 
   function switchFilter(value: string) {
     if (!spec) return;
@@ -63,11 +65,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           </div>
         )}
         <span className="hidden sm:block text-xs text-muted-foreground">
-          {spec?.param === 'submarket'
-            ? '장 마감 후 자동 갱신 (KST 기준)'
-            : currentMarket === 'KR'
-              ? '장 마감 후 자동 갱신 (KST 기준)'
-              : '장 마감 후 자동 갱신 (ET 기준)'}
+          {hintMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
         </span>
       </div>
       <div className="flex items-center gap-2">
