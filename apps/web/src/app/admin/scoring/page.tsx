@@ -15,6 +15,7 @@ interface ThresholdRow {
   count: number;
   hitRate7d: number | null;
   avgReturn7d: number | null;
+  avgAlpha7d: number | null;
   isCurrent: boolean;
 }
 
@@ -23,6 +24,7 @@ interface BandRow {
   count: number;
   hitRate7d: number | null;
   avgReturn7d: number | null;
+  avgAlpha7d: number | null;
   isCurrentBuyZone: boolean;
 }
 
@@ -32,6 +34,7 @@ interface StrategyRow {
   count: number;
   hitRate7d: number | null;
   avgReturn7d: number | null;
+  avgAlpha7d: number | null;
   currentWeight: number;
 }
 
@@ -103,8 +106,9 @@ export default function ScoringAnalysisPage() {
     !!curRow && !!bestRow && bestRow.threshold !== curRow.threshold &&
     curRow.hitRate7d != null && bestRow.hitRate7d != null &&
     curRow.avgReturn7d != null && bestRow.avgReturn7d != null &&
+    bestRow.avgAlpha7d != null && curRow.avgAlpha7d != null &&
     bestRow.hitRate7d > curRow.hitRate7d &&
-    bestRow.avgReturn7d > curRow.avgReturn7d;
+    bestRow.avgAlpha7d > curRow.avgAlpha7d;   // 수익률이 아니라 알파로 판단한다
 
   return (
     <div className="space-y-6">
@@ -172,11 +176,13 @@ export default function ScoringAnalysisPage() {
               <span>
                 현재 임계값 <strong>{curRow!.threshold}점</strong> — 적중률{' '}
                 <strong>{(curRow!.hitRate7d! * 100).toFixed(1)}%</strong>, 평균 수익{' '}
-                <strong>{curRow!.avgReturn7d != null ? `${curRow!.avgReturn7d >= 0 ? '+' : ''}${(curRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>,
+                <strong>{curRow!.avgReturn7d != null ? `${curRow!.avgReturn7d >= 0 ? '+' : ''}${(curRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>, 알파{' '}
+                <strong>{curRow!.avgAlpha7d != null ? `${curRow!.avgAlpha7d >= 0 ? '+' : ''}${(curRow!.avgAlpha7d * 100).toFixed(2)}%` : '-'}</strong>,
                 {' '}시그널 <strong>{curRow!.count.toLocaleString()}건</strong>.
                 {' '}<strong>{bestRow!.threshold}점</strong>으로 바꾸면 적중률{' '}
                 <strong>{(bestRow!.hitRate7d! * 100).toFixed(1)}%</strong>(+{(hitGap * 100).toFixed(1)}%p), 평균 수익{' '}
-                <strong>{bestRow!.avgReturn7d != null ? `${bestRow!.avgReturn7d >= 0 ? '+' : ''}${(bestRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>,
+                <strong>{bestRow!.avgReturn7d != null ? `${bestRow!.avgReturn7d >= 0 ? '+' : ''}${(bestRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>, 알파{' '}
+                <strong>{bestRow!.avgAlpha7d != null ? `${bestRow!.avgAlpha7d >= 0 ? '+' : ''}${(bestRow!.avgAlpha7d * 100).toFixed(2)}%` : '-'}</strong>,
                 {' '}시그널 <strong>{bestRow!.count.toLocaleString()}건</strong>이 됩니다.
               </span>
             </div>
@@ -197,6 +203,7 @@ export default function ScoringAnalysisPage() {
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">시그널 수</th>
                       <th className="px-3 py-2 text-left font-medium text-muted-foreground">7일 적중률</th>
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">평균 수익률</th>
+                      <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="지수 대비 초과수익. 시장 방향에 휘둘리지 않아 임계값 판단에는 이쪽이 적합합니다.">알파</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -210,6 +217,7 @@ export default function ScoringAnalysisPage() {
                         <td className="px-3 py-2 text-right tabular-nums">{row.count.toLocaleString()}</td>
                         <td className="px-3 py-2">{hitRateBar(row.hitRate7d)}</td>
                         <td className="px-3 py-2 text-right">{pct(row.avgReturn7d)}</td>
+                        <td className="px-3 py-2 text-right">{pct(row.avgAlpha7d)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -236,7 +244,8 @@ export default function ScoringAnalysisPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-muted-foreground">{row.count.toLocaleString()}건</span>
-                          {pct(row.avgReturn7d)}
+                          <span className="text-muted-foreground text-[10px]">수익</span>{pct(row.avgReturn7d)}
+                          <span className="text-muted-foreground text-[10px]">알파</span>{pct(row.avgAlpha7d)}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -269,6 +278,7 @@ export default function ScoringAnalysisPage() {
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">시그널 수</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">7일 적중률</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">평균 수익률</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="지수 대비 초과수익. 시장 방향이 빠져 있어 구간 비교에 적합합니다.">알파</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">구분</th>
                   </tr>
                 </thead>
@@ -279,6 +289,7 @@ export default function ScoringAnalysisPage() {
                       <td className="px-3 py-2 text-right tabular-nums">{row.count.toLocaleString()}</td>
                       <td className="px-3 py-2">{hitRateBar(row.hitRate7d)}</td>
                       <td className="px-3 py-2 text-right">{pct(row.avgReturn7d)}</td>
+                      <td className="px-3 py-2 text-right">{pct(row.avgAlpha7d)}</td>
                       <td className="px-3 py-2 text-center">
                         {row.isCurrentBuyZone
                           ? <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium">BUY 구간</span>
