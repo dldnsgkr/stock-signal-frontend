@@ -99,7 +99,7 @@ export default function ScoringAnalysisPage() {
         <div>
           <h2 className="text-base font-semibold">스코어링 피드백 분석</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            누적 BUY 시그널 성과 데이터로 임계값·전략 가중치를 검증합니다
+            채점된 전 종목의 7일 성과로 임계값·전략 가중치를 검증합니다 (최근 90일)
           </p>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function ScoringAnalysisPage() {
         </div>
       ) : !data || data.totalEvaluated === 0 ? (
         <div className="flex flex-col items-center gap-2 py-20 text-muted-foreground">
-          <p className="text-sm">평가 완료된 BUY 시그널 데이터가 없습니다.</p>
+          <p className="text-sm">평가 완료된 시그널 데이터가 없습니다.</p>
           <p className="text-xs">시그널 생성 후 최소 1일이 지나야 평가 데이터가 쌓입니다.</p>
         </div>
       ) : (
@@ -120,7 +120,7 @@ export default function ScoringAnalysisPage() {
             <Card><CardContent className="pt-4 pb-4">
               <p className="text-xs text-muted-foreground">평가 완료 시그널</p>
               <p className="mt-1 text-2xl font-bold">{data.totalEvaluated.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">BUY 7일 평가 기준</p>
+              <p className="text-xs text-muted-foreground mt-0.5">채점 전 종목 · 7일 평가 기준</p>
             </CardContent></Card>
 
             <Card><CardContent className="pt-4 pb-4">
@@ -128,7 +128,7 @@ export default function ScoringAnalysisPage() {
               <p className={`mt-1 text-2xl font-bold ${ins?.currentThresholdHitRate != null ? (ins.currentThresholdHitRate >= 0.5 ? 'text-green-600' : 'text-red-500') : ''}`}>
                 {ins?.currentThresholdHitRate != null ? `${(ins.currentThresholdHitRate * 100).toFixed(1)}%` : '-'}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">BUY ≥ 65점 기준</p>
+              <p className="text-xs text-muted-foreground mt-0.5">점수 ≥ 65 기준</p>
             </CardContent></Card>
 
             <Card><CardContent className="pt-4 pb-4">
@@ -157,7 +157,7 @@ export default function ScoringAnalysisPage() {
             <div className="flex items-start gap-2 rounded-lg border bg-primary/5 border-primary/20 px-4 py-3 text-xs">
               <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
               <span>
-                현재 BUY 임계값 <strong>65점</strong> 기준 적중률은{' '}
+                현재 BUY 임계값 <strong>65점</strong> 이상 종목의 적중률은{' '}
                 <strong>{ins?.currentThresholdHitRate != null ? `${(ins.currentThresholdHitRate * 100).toFixed(1)}%` : '-'}</strong>이며,
                 데이터 기준 최적 임계값은 <strong>{ins?.bestThreshold}점</strong>{' '}
                 (적중률 <strong>{ins?.bestThresholdHitRate != null ? `${(ins.bestThresholdHitRate * 100).toFixed(1)}%` : '-'}</strong>)입니다.
@@ -171,7 +171,7 @@ export default function ScoringAnalysisPage() {
             <Card className="min-w-0">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">임계값 민감도</p>
-                <p className="text-xs text-muted-foreground">점수 기준 이상 BUY 시그널의 성과</p>
+                <p className="text-xs text-muted-foreground">임계값을 그 점수로 낮췄을 때 잡혔을 종목의 성과</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
@@ -243,7 +243,7 @@ export default function ScoringAnalysisPage() {
           <Card className="min-w-0">
             <div className="border-b px-4 py-3">
               <p className="text-sm font-semibold">점수 구간별 성과</p>
-              <p className="text-xs text-muted-foreground">BUY 추천 시점 점수 구간 → 실제 7일 수익</p>
+              <p className="text-xs text-muted-foreground">채점 시점 점수 구간 → 실제 7일 수익</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
