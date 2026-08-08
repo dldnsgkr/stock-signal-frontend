@@ -1,4 +1,11 @@
 // Stock Signal 웹푸시 서비스 워커
+
+// 새 워커를 곧바로 활성화한다.
+// 기본 동작은 열려 있는 탭이 전부 닫힐 때까지 새 워커가 'waiting' 으로 대기하는 것인데,
+// 이 파일이 알림 표시 로직을 갖고 있어서 그동안 수정이 반영되지 않는다.
+// (2026-08-09: 알림 아이콘을 추가했는데 서버 푸시에는 며칠간 안 나올 뻔했다)
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener('push', (event) => {
   let payload = { title: 'Stock Signal', body: '', url: '/', tag: undefined };
   try {
