@@ -8,6 +8,7 @@ const PROXY = '/api/proxy';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
 import { fmtMarketDate, marketTimeZoneLabel } from '@/lib/marketTime';
+import { AgreementScore, AGREEMENT_LABEL, agreementTooltip } from '@/components/recommendation/AgreementScore';
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 interface Overview {
@@ -393,7 +394,7 @@ export default function PerformancePage() {
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">섹터</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="세 전략의 일치도 기반 확신도 — 적중 확률이 아닙니다.">신뢰도</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title={agreementTooltip(market)}>{AGREEMENT_LABEL}</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">진입가</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">7일</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">30일</th>
@@ -413,7 +414,7 @@ export default function PerformancePage() {
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{r.sector?.split(' ')[0] ?? '-'}</td>
                       <td className="px-3 py-2 text-right">
-                        <span className="rounded bg-primary/10 text-primary px-1 py-0.5">{r.confidence}%</span>
+                        <AgreementScore value={r.confidence} market={market} className="rounded bg-primary/10 text-primary px-1 py-0.5" />
                       </td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{r.entryPrice.toLocaleString()}</td>
                       <td className="px-3 py-2 text-right"><ReturnCell v={r.return7d}  recommendedAt={r.recommendedAt} horizon={7} /></td>
