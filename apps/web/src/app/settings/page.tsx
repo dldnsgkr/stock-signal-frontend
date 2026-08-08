@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, LogIn, Check, Settings as SettingsIcon, Bell, BellOff } from 'lucide-react';
-import { pushSupported, isSubscribed, subscribePush, unsubscribePush } from '@/lib/push';
+import { pushSupported, isSubscribed, subscribePush, unsubscribePush, sendTestNotification, notificationGuide } from '@/lib/push';
 
 interface UserSettings {
   defaultMarket: string;
@@ -179,6 +179,12 @@ function PushChannelCard() {
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // 구독 성공 != 알림 도착. OS 에서 브라우저 알림이 꺼져 있으면 권한도 'granted' 이고
+  // 구독도 정상인데 화면에는 아무것도 안 뜬다(조용한 실패). 감지할 API 가 없으므로
+  // 테스트를 보내고 사용자에게 확인받는다.
+  const [testSent, setTestSent] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const guide = notificationGuide();
 
   useEffect(() => {
     if (!pushSupported()) return;
@@ -191,12 +197,32 @@ function PushChannelCard() {
     setBusy(true);
     setErr(null);
     try {
-      if (subscribed) { await unsubscribePush(); setSubscribed(false); }
-      else { await subscribePush(); setSubscribed(true); }
+      if (subscribed) {
+        await unsubscribePush();
+        setSubscribed(false);
+        setTestSent(false);
+        setShowGuide(false);
+      } else {
+        await subscribePush();
+        setSubscribed(true);
+        // 켜자마자 바로 확인시킨다 — 나중에 확인하면 '못 받는 줄 모르는' 기간이 생긴다
+        await sendTest();
+      }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : '알림 설정 실패');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function sendTest() {
+    setErr(null);
+    try {
+      await sendTestNotification();
+      setTestSent(true);
+      setShowGuide(false);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : '테스트 알림 발송 실패');
     }
   }
 
@@ -229,6 +255,60 @@ function PushChannelCard() {
           )}
         </div>
         {err && <p className="text-xs text-red-500">{err}</p>}
+
+        {supported && subscribed && (
+          <div className="rounded-lg border bg-muted/30 px-3 py-2.5 space-y-2">
+            {!testSent ? (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  알림이 실제로 도착하는지 확인해 보세요. 기기 설정 때문에 안 보이는 경우가 있습니다.
+                </p>
+                <button
+                  onClick={sendTest}
+                  className="rounded-md border px-2.5 py-1 text-xs shrink-0 hover:bg-muted"
+                >
+                  테스트 알림
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs">테스트 알림을 보냈습니다. 화면에 보였나요?</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setTestSent(false); setShowGuide(false); }}
+                    className="rounded-md border border-primary/40 bg-primary/10 text-primary px-2.5 py-1 text-xs hover:bg-primary/15"
+                  >
+                    네, 보였어요
+                  </button>
+                  <button
+                    onClick={() => setShowGuide(true)}
+                    className="rounded-md border px-2.5 py-1 text-xs hover:bg-muted"
+                  >
+                    아니요, 안 보여요
+                  </button>
+                  <button onClick={sendTest} className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted">
+                    다시 보내기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {showGuide && (
+              <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30 px-3 py-2.5 space-y-1.5">
+                <p className="text-xs font-medium">
+                  브라우저는 알림을 받았는데 {guide.os} 가 화면에 띄우지 않는 상태입니다
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                  {guide.steps.map((step, i) => <li key={i}>{step}</li>)}
+                </ul>
+                <p className="text-[11px] text-muted-foreground pt-0.5">
+                  설정을 바꾼 뒤 <b>다시 보내기</b> 로 확인하세요. 이 설정을 켜지 않으면
+                  시그널 요약과 운영 경고를 받지 못합니다.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
