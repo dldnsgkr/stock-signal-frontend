@@ -91,7 +91,20 @@ export default function ScoringAnalysisPage() {
   }, [market]);
 
   const ins = data?.insight;
-  const thresholdDiff = ins?.bestThreshold != null && ins.bestThreshold !== ins.currentThreshold;
+  // 임계값 권고는 '적중률 최고' 만 보고 내면 안 된다.
+  // KR 은 65점 35.4% vs 70점 35.5% 로 적중률은 0.1%p 높지만 평균 수익률은
+  // 오히려 나빴다(-2.8% → -3.0%). 그걸 '최적'이라며 권하고 있었다.
+  // → **적중률과 수익률이 둘 다 나을 때만** 권고한다. 한쪽만 좋으면 트레이드오프라
+  //    사용자가 표를 직접 보고 판단할 문제지, 배너가 밀어붙일 일이 아니다.
+  const curRow  = data?.thresholdSensitivity.find(t => t.isCurrent);
+  const bestRow = data?.thresholdSensitivity.find(t => t.threshold === ins?.bestThreshold);
+  const hitGap  = (bestRow?.hitRate7d ?? 0) - (curRow?.hitRate7d ?? 0);
+  const thresholdDiff =
+    !!curRow && !!bestRow && bestRow.threshold !== curRow.threshold &&
+    curRow.hitRate7d != null && bestRow.hitRate7d != null &&
+    curRow.avgReturn7d != null && bestRow.avgReturn7d != null &&
+    bestRow.hitRate7d > curRow.hitRate7d &&
+    bestRow.avgReturn7d > curRow.avgReturn7d;
 
   return (
     <div className="space-y-6">
@@ -157,11 +170,14 @@ export default function ScoringAnalysisPage() {
             <div className="flex items-start gap-2 rounded-lg border bg-primary/5 border-primary/20 px-4 py-3 text-xs">
               <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
               <span>
-                현재 BUY 임계값 <strong>65점</strong> 이상 종목의 적중률은{' '}
-                <strong>{ins?.currentThresholdHitRate != null ? `${(ins.currentThresholdHitRate * 100).toFixed(1)}%` : '-'}</strong>이며,
-                데이터 기준 최적 임계값은 <strong>{ins?.bestThreshold}점</strong>{' '}
-                (적중률 <strong>{ins?.bestThresholdHitRate != null ? `${(ins.bestThresholdHitRate * 100).toFixed(1)}%` : '-'}</strong>)입니다.
-                임계값 조정을 고려해 보세요.
+                현재 임계값 <strong>{curRow!.threshold}점</strong> — 적중률{' '}
+                <strong>{(curRow!.hitRate7d! * 100).toFixed(1)}%</strong>, 평균 수익{' '}
+                <strong>{curRow!.avgReturn7d != null ? `${curRow!.avgReturn7d >= 0 ? '+' : ''}${(curRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>,
+                {' '}시그널 <strong>{curRow!.count.toLocaleString()}건</strong>.
+                {' '}<strong>{bestRow!.threshold}점</strong>으로 바꾸면 적중률{' '}
+                <strong>{(bestRow!.hitRate7d! * 100).toFixed(1)}%</strong>(+{(hitGap * 100).toFixed(1)}%p), 평균 수익{' '}
+                <strong>{bestRow!.avgReturn7d != null ? `${bestRow!.avgReturn7d >= 0 ? '+' : ''}${(bestRow!.avgReturn7d * 100).toFixed(2)}%` : '-'}</strong>,
+                {' '}시그널 <strong>{bestRow!.count.toLocaleString()}건</strong>이 됩니다.
               </span>
             </div>
           )}
@@ -191,7 +207,7 @@ export default function ScoringAnalysisPage() {
                           {row.isCurrent && <span className="ml-1.5 rounded bg-primary/10 text-primary px-1 py-0.5 text-[10px]">현재</span>}
                           {row.threshold === ins?.bestThreshold && !row.isCurrent && <span className="ml-1.5 rounded bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 px-1 py-0.5 text-[10px]">최적</span>}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums">{row.count}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.count.toLocaleString()}</td>
                         <td className="px-3 py-2">{hitRateBar(row.hitRate7d)}</td>
                         <td className="px-3 py-2 text-right">{pct(row.avgReturn7d)}</td>
                       </tr>
@@ -219,7 +235,7 @@ export default function ScoringAnalysisPage() {
                           <span className="text-muted-foreground">현재 가중치 {(row.currentWeight * 100).toFixed(0)}%</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-muted-foreground">{row.count}건</span>
+                          <span className="text-muted-foreground">{row.count.toLocaleString()}건</span>
                           {pct(row.avgReturn7d)}
                         </div>
                       </div>
@@ -260,7 +276,7 @@ export default function ScoringAnalysisPage() {
                   {data.scoreBands.map(row => (
                     <tr key={row.band} className={`${row.isCurrentBuyZone ? 'bg-primary/5' : 'hover:bg-muted/30'}`}>
                       <td className="px-3 py-2 font-medium tabular-nums">{row.band}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{row.count}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{row.count.toLocaleString()}</td>
                       <td className="px-3 py-2">{hitRateBar(row.hitRate7d)}</td>
                       <td className="px-3 py-2 text-right">{pct(row.avgReturn7d)}</td>
                       <td className="px-3 py-2 text-center">
