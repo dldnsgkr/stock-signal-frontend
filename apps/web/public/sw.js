@@ -6,6 +6,11 @@
 // (2026-08-09: 알림 아이콘을 추가했는데 서버 푸시에는 며칠간 안 나올 뻔했다)
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+// 크롬의 앱 설치 조건에 'fetch 핸들러가 있는 서비스워커' 가 포함된다.
+// 캐싱은 하지 않으므로 respondWith 를 호출하지 않는다 — 브라우저가 평소대로 네트워크로 간다.
+// (핸들러 존재 자체가 조건이다. 지우면 설치 버튼이 사라질 수 있다.)
+self.addEventListener('fetch', () => {});
+
 self.addEventListener('push', (event) => {
   let payload = { title: 'Stock Signal', body: '', url: '/', tag: undefined };
   try {
