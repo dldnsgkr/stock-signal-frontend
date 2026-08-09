@@ -306,6 +306,14 @@ export default function SimulationPage() {
             <strong> 그 N개가 &lsquo;가장 좋은 N개&rsquo;라는 뜻은 아닙니다.</strong>
             규칙을 바꾸면 알파가 1~2%p 움직입니다 — N이 작을수록 개별 수치보다
             <strong> 전략 간 방향 차이</strong>를 보세요.
+            {market === 'US' && (
+              <>
+                <br />
+                미국은 상위 점수가 <strong>초소형주에 쏠려 있습니다</strong> — Top20 의 종가 중앙값이
+                $9.5(19%가 $1 미만), 일 거래대금 중앙값이 <strong>$0.7M</strong>으로 나머지 BUY($10.9M)의
+                1/16입니다. 표시된 수익률은 <strong>실제로 그 물량을 체결할 수 있다는 전제</strong>가 없습니다.
+              </>
+            )}
           </div>
 
           {/* 전략 선택 카드 */}
