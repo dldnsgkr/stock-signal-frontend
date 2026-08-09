@@ -13,6 +13,7 @@ interface StrategyStats {
   portfolioReturn: number;
   benchmarkReturn: number | null;
   alpha: number | null;
+  excludedOutliers: number;
   stdDev: number;
   sharpe: number | null;
   hitRate: number | null;
@@ -343,6 +344,8 @@ export default function SimulationPage() {
                       { label: '최고 수익',          value: pct(stats.bestReturn),  trend: stats.bestReturn },
                       { label: '최저 수익',          value: pct(stats.worstReturn), trend: stats.worstReturn },
                       { label: '총 포지션',          value: `${stats.count}개`, trend: null },
+                      // 제외 건수를 반드시 함께 보여줄 것 — 조용히 버리면 '전부 반영된 수치'로 읽힌다.
+                      { label: '이상치 제외',        value: `${stats.excludedOutliers}건`, trend: null },
                     ].map(row => (
                       <div key={row.label} className="flex items-center justify-between gap-4">
                         <dt className="text-muted-foreground">{row.label}</dt>
