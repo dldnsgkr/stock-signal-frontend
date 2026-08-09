@@ -364,7 +364,7 @@ export default function PerformancePage() {
             <Card className="lg:col-span-3 min-w-0 overflow-hidden">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">주별 평균 수익률 추이</p>
-                <p className="text-xs text-muted-foreground">시그널 vs 벤치마크 (7일 기준)</p>
+                <p className="text-xs text-muted-foreground">시그널 vs 벤치마크 — 동일가중 유니버스 (7일 기준)</p>
               </div>
               <CardContent className="pt-3">
                 <TimelineChart data={timeline} />

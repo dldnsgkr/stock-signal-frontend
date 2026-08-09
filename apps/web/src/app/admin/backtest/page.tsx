@@ -239,7 +239,7 @@ export default function BacktestPage() {
           <p className="text-xs text-muted-foreground">
             {result.market} · {result.horizon === '7d' ? '7일' : '30일'} 수익률 · run {result.runs}개
             {result.skippedSnapshots > 0 && ` · 스냅샷 ${result.skippedSnapshots}건 제외(구조 불일치)`}
-            {' '}· 알파 = 시장 지수 대비 초과수익
+            {' '}· 알파 = 동일가중 유니버스(같은 날 시장 전 종목 평균) 대비 초과수익
           </p>
         </>
       )}

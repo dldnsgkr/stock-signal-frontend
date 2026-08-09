@@ -203,7 +203,7 @@ export default function ScoringAnalysisPage() {
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">시그널 수</th>
                       <th className="px-3 py-2 text-left font-medium text-muted-foreground">7일 적중률</th>
                       <th className="px-3 py-2 text-right font-medium text-muted-foreground">평균 수익률</th>
-                      <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="지수 대비 초과수익. 시장 방향에 휘둘리지 않아 임계값 판단에는 이쪽이 적합합니다.">알파</th>
+                      <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="동일가중 유니버스(같은 날 시장 전 종목 평균) 대비 초과수익. 시장 방향에 휘둘리지 않아 임계값 판단에는 이쪽이 적합합니다.">알파</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -278,7 +278,7 @@ export default function ScoringAnalysisPage() {
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">시그널 수</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">7일 적중률</th>
                     <th className="px-3 py-2 text-right font-medium text-muted-foreground">평균 수익률</th>
-                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="지수 대비 초과수익. 시장 방향이 빠져 있어 구간 비교에 적합합니다.">알파</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground cursor-help" title="동일가중 유니버스(같은 날 시장 전 종목 평균) 대비 초과수익. 시장 방향이 빠져 있어 구간 비교에 적합합니다.">알파</th>
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">구분</th>
                   </tr>
                 </thead>
