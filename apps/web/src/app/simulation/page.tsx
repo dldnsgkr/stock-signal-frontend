@@ -160,8 +160,8 @@ function StrategyCard({
       <div className="grid grid-cols-2 gap-x-3 text-xs text-muted-foreground">
         <span>알파 {pct(stats?.alpha ?? null, 2)}</span>
         <span>적중률 {stats?.hitRate != null ? `${(stats.hitRate * 100).toFixed(0)}%` : '-'}</span>
-        <span>표준편차 {stats?.stdDev != null ? pct(stats.stdDev) : '-'}</span>
-        <span>Sharpe {stats?.sharpe?.toFixed(2) ?? '-'}</span>
+        <span title="포트폴리오 변동성이 아니라 종목 간 수익률 산포입니다">종목 간 산포 {stats?.stdDev != null ? pct(stats.stdDev) : '-'}</span>
+        <span title="평균 수익률 ÷ 종목 간 산포. 무위험수익률·연율화가 없어 샤프 지수가 아닙니다">수익/산포 {stats?.sharpe?.toFixed(2) ?? '-'}</span>
       </div>
       <p className="text-xs text-muted-foreground border-t pt-1">{meta.desc}</p>
     </button>
@@ -321,8 +321,11 @@ export default function SimulationPage() {
                       { label: '벤치마크 수익률',   value: pct(stats.benchmarkReturn), trend: stats.benchmarkReturn },
                       { label: '초과 수익 (Alpha)', value: pct(stats.alpha),           trend: stats.alpha },
                       { label: '적중률',            value: stats.hitRate != null ? `${(stats.hitRate*100).toFixed(1)}%` : '-', trend: stats.hitRate != null ? stats.hitRate - 0.5 : null },
-                      { label: '변동성 (StdDev)',   value: pct(stats.stdDev), trend: null },
-                      { label: 'Sharpe Ratio',      value: stats.sharpe?.toFixed(2) ?? '-', trend: stats.sharpe },
+                      // ⚠️ '변동성'·'Sharpe' 로 되돌리지 말 것 — 실제 계산은 종목 간 횡단면 산포다.
+                      // N 종목 포트폴리오의 변동성은 대략 이 값의 1/√N 이고, 아래 비율에는
+                      // 무위험수익률도 연율화도 없다. 진짜 샤프는 일별 포트폴리오 시계열이 있어야 한다.
+                      { label: '종목 간 산포',      value: pct(stats.stdDev), trend: null },
+                      { label: '수익 / 산포',       value: stats.sharpe?.toFixed(2) ?? '-', trend: stats.sharpe },
                       { label: '최고 수익',          value: pct(stats.bestReturn),  trend: stats.bestReturn },
                       { label: '최저 수익',          value: pct(stats.worstReturn), trend: stats.worstReturn },
                       { label: '총 포지션',          value: `${stats.count}개`, trend: null },
