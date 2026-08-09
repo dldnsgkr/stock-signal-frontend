@@ -293,6 +293,20 @@ export default function SimulationPage() {
             </span>
           </div>
 
+          {/* 점수 동점 경고 — 이 문구를 지우지 말 것.
+              점수 양자화가 심해 Top-N 경계에 동점이 평균 12~16 종목(최대 45) 몰린다.
+              tie-break 를 stock_id 오름차순으로 고정해 재현성은 확보했지만, 그 5종목이
+              '가장 좋은 5종목' 이라는 뜻은 아니다. 규칙을 바꾸면 알파가 1~2%p 움직인다
+              (2026-08-10 실측: US top5 알파 -3.23% / -1.46% / -1.68%). 부호는 유지된다. */}
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+            <strong className="text-amber-600 dark:text-amber-500">Top-N 해석 주의</strong>{' '}
+            점수가 촘촘히 겹쳐 Top-N 경계에 <strong>같은 점수 종목이 평균 12~16개</strong> 몰립니다.
+            그중 몇 개를 집을지는 정해진 규칙(종목 ID 순)으로 고정해 두어 결과는 재현되지만,
+            <strong> 그 N개가 &lsquo;가장 좋은 N개&rsquo;라는 뜻은 아닙니다.</strong>
+            규칙을 바꾸면 알파가 1~2%p 움직입니다 — N이 작을수록 개별 수치보다
+            <strong> 전략 간 방향 차이</strong>를 보세요.
+          </div>
+
           {/* 전략 선택 카드 */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(['top5','top10','top20','all'] as Strategy[]).map(s => (
