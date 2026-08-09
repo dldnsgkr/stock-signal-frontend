@@ -303,7 +303,7 @@ export default function SimulationPage() {
             <strong className="text-amber-600 dark:text-amber-500">Top-N 해석 주의</strong>{' '}
             점수가 촘촘히 겹쳐 Top-N 경계에 <strong>같은 점수 종목이 평균 12~16개</strong> 몰립니다.
             그중 몇 개를 집을지는 정해진 규칙(종목 ID 순)으로 고정해 두어 결과는 재현되지만,
-            <strong> 그 N개가 &lsquo;가장 좋은 N개&rsquo;라는 뜻은 아닙니다.</strong>
+            <strong> 그 N개가 &lsquo;가장 좋은 N개&rsquo;라는 뜻은 아닙니다.</strong>{' '}
             규칙을 바꾸면 알파가 1~2%p 움직입니다 — N이 작을수록 개별 수치보다
             <strong> 전략 간 방향 차이</strong>를 보세요.
             {market === 'US' && (
