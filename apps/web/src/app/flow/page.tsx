@@ -57,9 +57,9 @@ function fmtChange(v: number | null): string {
 }
 
 /** 일별 순매수 미니 바 차트. 양수=파랑(순매수), 음수=빨강(순매도) — 표 색상 관례와 동일. */
-function Sparkline({ daily }: { daily: number[] }) {
+function Sparkline({ daily, width = 84 }: { daily: number[]; width?: number }) {
   if (!daily.length) return <span className="text-muted-foreground">-</span>;
-  const W = 84;
+  const W = width;
   const H = 22;
   const mid = H / 2;
   const maxAbs = Math.max(...daily.map(Math.abs), 1);
@@ -151,12 +151,12 @@ function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }
                   <Link href={`/stocks/${s.symbol}`} className="flex items-center gap-2 hover:underline">
                     <span className="w-5 text-muted-foreground tabular-nums">{i + 1}</span>
                     <span className="min-w-0">
-                      <span className="font-medium block truncate max-w-[100px]">{s.name}</span>
+                      <span className="font-medium block truncate max-w-[88px]">{s.name}</span>
                       <span className="text-muted-foreground">{s.symbol}</span>
                     </span>
                   </Link>
                 </td>
-                <td className="px-2 py-2"><Sparkline daily={s.daily} /></td>
+                <td className="px-2 py-2"><Sparkline daily={s.daily} width={60} /></td>
                 <td className={`px-2 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${netColor}`}>
                   {fmtNet(s.totalNet)}
                   <span className="block font-normal text-muted-foreground">{fmtPrice(s.currentPrice)}</span>
