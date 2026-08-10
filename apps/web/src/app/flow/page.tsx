@@ -92,60 +92,86 @@ function fmtIntensity(v: number | null): string {
 }
 
 function RankTable({ items, type }: { items: RankEntry[]; type: 'buy' | 'sell' }) {
+  const netColor = type === 'buy' ? 'text-blue-600 dark:text-blue-400' : 'text-red-500';
+  const streakBadge = type === 'buy'
+    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+    : 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300';
+
+  const Streak = ({ n }: { n: number }) =>
+    n >= 3
+      ? <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${streakBadge}`}>{n}일 연속</span>
+      : <span className="text-muted-foreground tabular-nums">{n}일</span>;
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b text-muted-foreground">
-            <th className="px-3 py-2 text-left font-medium">종목</th>
-            <th className="px-3 py-2 text-left font-medium">일별 추이</th>
-            <th className="px-3 py-2 text-right font-medium">누적 순매수</th>
-            <th className="px-3 py-2 text-right font-medium" title="구간 거래대금 대비 순매수 비중">강도</th>
-            <th className="px-3 py-2 text-right font-medium">연속</th>
-            <th className="px-3 py-2 text-right font-medium">등락률</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((s, i) => (
-            <tr key={s.symbol} className="border-b last:border-0 hover:bg-muted/40">
-              <td className="px-3 py-2">
-                <Link href={`/stocks/${s.symbol}`} className="flex items-center gap-2 hover:underline">
-                  <span className="w-5 text-muted-foreground tabular-nums">{i + 1}</span>
-                  <span className="min-w-0">
-                    <span className="font-medium block truncate max-w-[140px]">{s.name}</span>
-                    <span className="text-muted-foreground">{s.symbol}</span>
-                  </span>
-                </Link>
-              </td>
-              <td className="px-3 py-2"><Sparkline daily={s.daily} /></td>
-              <td className={`px-3 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${
-                type === 'buy' ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'
-              }`}>
-                {fmtNet(s.totalNet)}
-                <span className="block font-normal text-muted-foreground">{fmtPrice(s.currentPrice)}</span>
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{fmtIntensity(s.intensity)}</td>
-              <td className="px-3 py-2 text-right whitespace-nowrap">
-                {s.streak >= 3 ? (
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                    type === 'buy'
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                      : 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300'
-                  }`}>
-                    {s.streak}일 연속
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground tabular-nums">{s.streak}일</span>
-                )}
-              </td>
-              <td className={`px-3 py-2 text-right tabular-nums whitespace-nowrap ${changeColor(s.changeRate)}`}>
-                {fmtChange(s.changeRate)}
-              </td>
+    <>
+      {/* 모바일: 표를 가로 스크롤시키면 강도·연속·등락률이 화면 밖에 숨는다.
+          좁은 폭에서는 한 종목을 3줄 카드로 펼쳐 전부 보이게 한다(2026-08-10). */}
+      <ul className="sm:hidden divide-y">
+        {items.map((s, i) => (
+          <li key={s.symbol} className="px-3 py-2.5">
+            <Link href={`/stocks/${s.symbol}`} className="block hover:opacity-80">
+              <div className="flex items-baseline gap-2">
+                <span className="w-5 shrink-0 text-xs text-muted-foreground tabular-nums">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{s.name}</span>
+                <span className={`shrink-0 text-sm font-semibold tabular-nums ${netColor}`}>{fmtNet(s.totalNet)}</span>
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-2 pl-7 text-xs text-muted-foreground">
+                <span className="min-w-0 flex-1 truncate">{s.symbol}</span>
+                <span className="shrink-0 tabular-nums">{fmtPrice(s.currentPrice)}</span>
+                <span className={`shrink-0 tabular-nums ${changeColor(s.changeRate)}`}>{fmtChange(s.changeRate)}</span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-3 pl-7">
+                <Sparkline daily={s.daily} />
+                <span className="text-xs text-muted-foreground tabular-nums">강도 {fmtIntensity(s.intensity)}</span>
+                <span className="ml-auto text-xs"><Streak n={s.streak} /></span>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {/* 데스크톱: xl 에서 2열이 되면 카드 폭이 ~494px 이라 여백을 넉넉히 주면 표가 넘친다.
+          px-2 + 종목명 100px 상한으로 맞춰 두었다. */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b text-muted-foreground">
+              <th className="px-2 py-2 text-left font-medium">종목</th>
+              <th className="px-2 py-2 text-left font-medium">일별 추이</th>
+              <th className="px-2 py-2 text-right font-medium">누적 순매수</th>
+              <th className="px-2 py-2 text-right font-medium" title="구간 거래대금 대비 순매수 비중">강도</th>
+              <th className="px-2 py-2 text-right font-medium">연속</th>
+              <th className="px-2 py-2 text-right font-medium">등락률</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {items.map((s, i) => (
+              <tr key={s.symbol} className="border-b last:border-0 hover:bg-muted/40">
+                <td className="px-2 py-2">
+                  <Link href={`/stocks/${s.symbol}`} className="flex items-center gap-2 hover:underline">
+                    <span className="w-5 text-muted-foreground tabular-nums">{i + 1}</span>
+                    <span className="min-w-0">
+                      <span className="font-medium block truncate max-w-[100px]">{s.name}</span>
+                      <span className="text-muted-foreground">{s.symbol}</span>
+                    </span>
+                  </Link>
+                </td>
+                <td className="px-2 py-2"><Sparkline daily={s.daily} /></td>
+                <td className={`px-2 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${netColor}`}>
+                  {fmtNet(s.totalNet)}
+                  <span className="block font-normal text-muted-foreground">{fmtPrice(s.currentPrice)}</span>
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap">{fmtIntensity(s.intensity)}</td>
+                <td className="px-2 py-2 text-right whitespace-nowrap"><Streak n={s.streak} /></td>
+                <td className={`px-2 py-2 text-right tabular-nums whitespace-nowrap ${changeColor(s.changeRate)}`}>
+                  {fmtChange(s.changeRate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
