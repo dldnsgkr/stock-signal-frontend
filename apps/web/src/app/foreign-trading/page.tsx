@@ -309,10 +309,9 @@ export default function ForeignTradingPage() {
           </CardContent>
         </Card>
       ) : (
-        {/* 2열 전환을 xl(1280) 이 아니라 2xl(1536) 로 미룬다.
-            xl 에서 2열이면 칸이 ~494px 인데 이 표는 값 길이에 따라 494~518px 을 오간다
-            (조 단위면 짧고 억 단위면 길다) — 픽셀을 깎아 맞추면 데이터가 바뀔 때 또 깨진다.
-            1280~1535 구간은 1열 전체 폭(~1200px)이라 여유가 충분하다. */}
+        // 2열 전환을 xl(1280) 이 아니라 2xl(1536) 로 미룬다 — xl 2열이면 칸이 ~494px 인데
+        // 이 표는 값 길이에 따라 494~518px 을 오간다(조 단위면 짧고 억 단위면 길다).
+        // 픽셀을 깎아 맞추면 데이터가 바뀔 때 또 깨진다. 1280~1535 는 1열 전체 폭으로 둔다.
         <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
           {data!.topBuy.length > 0 && (
             <Card className="min-w-0">
