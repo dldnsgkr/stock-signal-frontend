@@ -94,59 +94,98 @@ function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell'
   const hasPrices = items.some(s => s.currentPrice != null);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead className="bg-muted/50 border-b">
-          <tr>
-            <th className="px-2 py-2 text-center font-medium text-muted-foreground w-8">순위</th>
-            <th className="px-3 py-2 text-left font-medium text-muted-foreground">종목명</th>
-            {hasPrices && (
-              <>
-                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">현재가</th>
-                <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">등락률</th>
-              </>
-            )}
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-              {isBuy ? '순매수' : '순매도'}
-            </th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap hidden sm:table-cell">매수</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap hidden sm:table-cell">매도</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {items.map((s, i) => (
-            <tr key={s.code} className="hover:bg-muted/30">
-              <td className="px-2 py-2 text-center text-muted-foreground font-medium">{i + 1}</td>
-              <td className="px-3 py-2">
-                <span className="font-medium">{s.name}</span>
-                <span className="ml-1.5 text-muted-foreground">{s.code}</span>
-              </td>
+    <>
+      {/* 모바일: 예전에는 표를 가로 스크롤시키면서 매수·매도 컬럼을 아예 숨겼다
+          (hidden sm:table-cell) — 좁은 화면에서는 그 값을 볼 방법이 없었다.
+          카드로 펼쳐 전부 보여준다(2026-08-10, 수급 랭킹과 같은 패턴). */}
+      <ul className="sm:hidden divide-y">
+        {items.map((s, i) => (
+          <li key={s.code} className="px-3 py-2.5">
+            <div className="flex items-baseline gap-2">
+              <span className="w-5 shrink-0 text-xs text-muted-foreground tabular-nums">{i + 1}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{s.name}</span>
+              <span className={`shrink-0 text-sm font-semibold tabular-nums ${netColor(s.netBuyVal)}`}>
+                {fmtVal(s.netBuyVal)}
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-baseline gap-2 pl-7 text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1 truncate">{s.code}</span>
               {hasPrices && (
                 <>
-                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap font-medium">
+                  <span className="shrink-0 tabular-nums">
                     {s.currentPrice != null ? fmtPrice(s.currentPrice) : '—'}
-                  </td>
-                  <td className={`px-3 py-2 text-right tabular-nums whitespace-nowrap font-semibold ${
+                  </span>
+                  <span className={`shrink-0 tabular-nums ${
                     s.changeRate != null ? changeColor(s.changeRate) : 'text-muted-foreground'
                   }`}>
                     {s.changeRate != null ? fmtChange(s.changeRate) : '—'}
-                  </td>
+                  </span>
                 </>
               )}
-              <td className={`px-3 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${netColor(s.netBuyVal)}`}>
-                {fmtVal(s.netBuyVal)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                {fmtVal(s.buyVal)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                {fmtVal(s.sellVal)}
-              </td>
+            </div>
+            <div className="mt-1 pl-7 text-xs text-muted-foreground tabular-nums">
+              매수 {fmtVal(s.buyVal)} · 매도 {fmtVal(s.sellVal)}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* 데스크톱: xl 에서 2열이 되면 칸이 ~494px 이라 px-3 이면 표가 넘쳐
+          매도 컬럼이 잘렸다. px-2 로 좁힌다. */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-muted/50 border-b">
+            <tr>
+              <th className="px-2 py-2 text-center font-medium text-muted-foreground w-8">순위</th>
+              <th className="px-2 py-2 text-left font-medium text-muted-foreground">종목명</th>
+              {hasPrices && (
+                <>
+                  <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">현재가</th>
+                  <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">등락률</th>
+                </>
+              )}
+              <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
+                {isBuy ? '순매수' : '순매도'}
+              </th>
+              <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">매수</th>
+              <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">매도</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y">
+            {items.map((s, i) => (
+              <tr key={s.code} className="hover:bg-muted/30">
+                <td className="px-2 py-2 text-center text-muted-foreground font-medium">{i + 1}</td>
+                <td className="px-2 py-2">
+                  <span className="font-medium">{s.name}</span>
+                  <span className="ml-1.5 text-muted-foreground">{s.code}</span>
+                </td>
+                {hasPrices && (
+                  <>
+                    <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap font-medium">
+                      {s.currentPrice != null ? fmtPrice(s.currentPrice) : '—'}
+                    </td>
+                    <td className={`px-2 py-2 text-right tabular-nums whitespace-nowrap font-semibold ${
+                      s.changeRate != null ? changeColor(s.changeRate) : 'text-muted-foreground'
+                    }`}>
+                      {s.changeRate != null ? fmtChange(s.changeRate) : '—'}
+                    </td>
+                  </>
+                )}
+                <td className={`px-2 py-2 text-right tabular-nums font-semibold whitespace-nowrap ${netColor(s.netBuyVal)}`}>
+                  {fmtVal(s.netBuyVal)}
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap">
+                  {fmtVal(s.buyVal)}
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums text-muted-foreground whitespace-nowrap">
+                  {fmtVal(s.sellVal)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
