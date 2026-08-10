@@ -88,7 +88,7 @@ function fmtFullDate(isoDate: string): string {
 // 억원 단위로 변환 + 부호 포함 포맷
 function fmtValue(v: number, short = false): string {
   if (v === 0) return '0';
-  const sign = v > 0 ? '+' : '';
+  const sign = v > 0 ? '+' : '-';   // abs 를 취하므로 음수 부호를 여기서 복원해야 한다
   const abs = Math.abs(v);
   // pykrx 반환값이 원(KRW) 단위인 경우 억원으로 변환
   // 최대값이 1억 이상이면 원 단위, 아니면 이미 억원 단위
@@ -103,11 +103,14 @@ function fmtValue(v: number, short = false): string {
 }
 
 function fmtAxisValue(v: number): string {
+  // ⚠️ abs 를 취한 뒤 부호를 되돌려야 한다. 안 그러면 0 아래 눈금이
+  // -3조/-6조 가 아니라 3조/6조 로 찍혀 위아래가 같아 보인다(2026-08-10).
+  const sign = v < 0 ? '-' : '';
   const abs = Math.abs(v);
   const inWon = abs > 100_000_000;
   const billions = inWon ? abs / 100_000_000 : abs;
-  if (Math.abs(billions) >= 10000) return `${(billions / 10000).toFixed(0)}조`;
-  return `${Math.round(billions).toLocaleString()}억`;
+  if (billions >= 10000) return `${sign}${(billions / 10000).toFixed(0)}조`;
+  return `${sign}${Math.round(billions).toLocaleString()}억`;
 }
 
 function netColor(v: number) {

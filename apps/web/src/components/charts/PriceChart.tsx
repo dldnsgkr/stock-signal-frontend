@@ -96,9 +96,11 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
   const option = {
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     legend: { data: [symbol, 'MA20', 'MA60', '거래량'], textStyle: { fontSize: 11 } },
+    // right 를 좁히지 말 것 — 지지·저항 markLine 라벨이 position:'end' 라
+    // 격자 오른쪽 바깥에 그려진다. 8% 였을 때 '저항 $344.57' 이 잘렸다(2026-08-10).
     grid: [
-      { left: '5%', right: '8%', top: '8%', height: '55%' },
-      { left: '5%', right: '8%', top: '70%', height: '15%' },
+      { left: '5%', right: '14%', top: '8%', height: '55%' },
+      { left: '5%', right: '14%', top: '70%', height: '15%' },
     ],
     xAxis: [
       { type: 'category', data: dates, gridIndex: 0, axisLabel: { show: false } },
@@ -106,7 +108,18 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
     ],
     yAxis: [
       { type: 'value', gridIndex: 0, scale: true },
-      { type: 'value', gridIndex: 1 },
+      // 거래량은 자릿수가 커서 기본 포맷이면 축 라벨이 잘린다 —
+      // AAPL 5천만주가 '50000000' 으로 렌더돼 뒷자리 '000' 만 보였다(2026-08-10).
+      {
+        type: 'value',
+        gridIndex: 1,
+        axisLabel: {
+          formatter: (v: number) =>
+            v >= 1e8 ? `${(v / 1e8).toFixed(1)}억`
+              : v >= 1e4 ? `${Math.round(v / 1e4).toLocaleString()}만`
+                : v.toLocaleString(),
+        },
+      },
     ],
     series: [
       {

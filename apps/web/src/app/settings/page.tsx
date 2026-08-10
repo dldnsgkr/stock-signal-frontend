@@ -329,7 +329,10 @@ function Toggle({ label, desc, checked, onChange }: {
         role="switch"
         aria-checked={checked}
       >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        {/* ⚠️ left-0.5 를 빼지 말 것. absolute 에 left 가 없으면 정적 위치가 쓰이는데,
+            button 의 UA 기본 text-align:center 때문에 트랙 중앙(+22px)에서 시작한다.
+            거기에 translate 까지 더해져 손잡이가 트랙 밖으로 18px 튀어나갔다(2026-08-10). */}
+        <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
     </div>
   );
