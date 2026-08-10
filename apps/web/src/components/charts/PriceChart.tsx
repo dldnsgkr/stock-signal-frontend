@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface PriceData {
@@ -31,13 +31,23 @@ function fmtPrice(v: number, market = 'US') {
 export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReactECharts>(null);
+  const [width, setWidth] = useState(0);
+  // 좁은 화면에서는 격자 여백(%)이 라벨 폭을 못 당해낸다 — 모바일에서 '39.0만' 이
+  // '9.0만' 으로, '저항 ₩276,000' 이 '저항 ₩276' 으로 잘렸다(2026-08-10).
+  // 여백은 px 로 잡고, markLine 라벨은 좁을 때 숨긴다(차트 아래 범례가 전 레벨을 이미 보여준다).
+  const narrow = width > 0 && width < 520;
+  const gridLeft = market === 'KR' ? 52 : 44;
+  const gridRight = narrow ? 14 : 92;
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width;
-      if (width) chartRef.current?.getEchartsInstance()?.resize({ width });
+      const w = entries[0]?.contentRect.width;
+      if (w) {
+        setWidth(w);
+        chartRef.current?.getEchartsInstance()?.resize({ width: w });
+      }
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -53,14 +63,16 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
     markLines.push([
       { xAxis: 0, yAxis: r, symbol: 'none' },
       { xAxis: dates.length - 1, yAxis: r, symbol: 'none',
-        label: { formatter: `저항 ${fmtPrice(r, market)}`, position: 'end', fontSize: 10 } },
+        label: narrow ? { show: false }
+          : { formatter: `저항 ${fmtPrice(r, market)}`, position: 'end', fontSize: 10 } },
     ]);
   });
   levels?.support.forEach((s) => {
     markLines.push([
       { xAxis: 0, yAxis: s, symbol: 'none' },
       { xAxis: dates.length - 1, yAxis: s, symbol: 'none',
-        label: { formatter: `지지 ${fmtPrice(s, market)}`, position: 'end', fontSize: 10 } },
+        label: narrow ? { show: false }
+          : { formatter: `지지 ${fmtPrice(s, market)}`, position: 'end', fontSize: 10 } },
     ]);
   });
 
@@ -102,8 +114,8 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
     //  · left  : 원화 6자리(삼성전자 230,000)가 5% 폭에 안 들어가
     //            축 라벨이 전부 '000' 으로만 보였다. 포맷터와 함께 넓힌다.
     grid: [
-      { left: '11%', right: '14%', top: '8%', height: '55%' },
-      { left: '11%', right: '14%', top: '70%', height: '15%' },
+      { left: gridLeft, right: gridRight, top: '8%', height: '55%' },
+      { left: gridLeft, right: gridRight, top: '70%', height: '15%' },
     ],
     xAxis: [
       { type: 'category', data: dates, gridIndex: 0, axisLabel: { show: false } },

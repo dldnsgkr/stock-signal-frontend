@@ -319,7 +319,9 @@ export default function InvestorTradingPage() {
       ) : (
         <>
           {/* 요약 카드 */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 모바일에서 3열을 유지하면 카드가 ~103px 이 되어 '+3,999억' 이
+              '+3,999' / '억' 으로 쪼개진다(2026-08-10 확인). 좁은 폭에서는 세로로 쌓는다. */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {summaryCards.map(({ key, label }) => {
               const v = summary[key] ?? 0;
               const inWon = Math.abs(v) > 100_000_000;
