@@ -155,9 +155,11 @@ function StockTable({ items, type }: { items: StockEntry[]; type: 'buy' | 'sell'
             {items.map((s, i) => (
               <tr key={s.code} className="hover:bg-muted/30">
                 <td className="px-2 py-2 text-center text-muted-foreground font-medium">{i + 1}</td>
+                {/* 이름·코드를 한 줄에 두면 '삼성바이오로직스' 같은 긴 이름이 칸을 밀어
+                    xl 2열에서 표가 넘친다 — 2줄 + 말줄임으로 폭을 고정한다. */}
                 <td className="px-2 py-2">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="ml-1.5 text-muted-foreground">{s.code}</span>
+                  <span className="block max-w-[104px] truncate font-medium">{s.name}</span>
+                  <span className="block text-muted-foreground">{s.code}</span>
                 </td>
                 {hasPrices && (
                   <>
