@@ -124,7 +124,11 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
       {
         type: 'value',
         gridIndex: 1,
+        // 거래량 격자는 높이가 15% 뿐이다 — 기본 눈금 수(5~6개)면 라벨이 서로 겹쳐
+        // 한 덩어리로 뭉개진다. 눈금을 줄이고 자릿수도 축약한다(2026-08-10).
+        splitNumber: 2,
         axisLabel: {
+          fontSize: 10,
           formatter: (v: number) =>
             v >= 1e8 ? `${(v / 1e8).toFixed(1)}억`
               : v >= 1e4 ? `${Math.round(v / 1e4).toLocaleString()}만`
