@@ -46,7 +46,7 @@ export function WatchlistButton({ symbol }: WatchlistButtonProps) {
     <button
       onClick={toggle}
       disabled={busy}
-      className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
+      className={`flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
         inList
           ? 'border-amber-400/60 bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400'
           : 'text-muted-foreground hover:bg-muted'

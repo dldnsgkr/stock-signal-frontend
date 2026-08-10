@@ -68,7 +68,8 @@ export default async function StockDetailPage({ params }: PageProps) {
             <h1 className="text-xl font-bold">{stock.symbol}</h1>
             {latestRec && <SignalBadge action={latestRec.action} />}
             <span className="ml-auto flex items-center gap-2">
-              <a href={`/compare?symbols=${stock.symbol}`} className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted">
+              {/* whitespace-nowrap — 좁은 폭에서 '비교' 가 '비'/'교' 로 쪼개졌다(2026-08-10) */}
+              <a href={`/compare?symbols=${stock.symbol}`} className="flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted">
                 비교
               </a>
               <WatchlistButton symbol={stock.symbol} />
