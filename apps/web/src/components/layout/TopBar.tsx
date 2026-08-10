@@ -64,9 +64,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             ))}
           </div>
         )}
-        <span className="hidden sm:block text-xs text-muted-foreground">
-          {hintMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
-        </span>
+        {/* 필터가 없는 화면(관심종목·비교·알림이력·설정)은 시장 개념이 없다.
+            거기서도 문구를 띄우면 근거 없이 '(ET 기준)'이 붙는다 — spec 이 있을 때만 보여준다. */}
+        {spec && (
+          <span className="hidden sm:block text-xs text-muted-foreground">
+            {hintMarket === 'KR' ? '장 마감 후 자동 갱신 (KST 기준)' : '장 마감 후 자동 갱신 (ET 기준)'}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <PushToggle />
