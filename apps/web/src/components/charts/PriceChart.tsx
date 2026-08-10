@@ -96,18 +96,29 @@ export function PriceChart({ data, symbol, levels, market = 'US' }: PriceChartPr
   const option = {
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     legend: { data: [symbol, 'MA20', 'MA60', '거래량'], textStyle: { fontSize: 11 } },
-    // right 를 좁히지 말 것 — 지지·저항 markLine 라벨이 position:'end' 라
-    // 격자 오른쪽 바깥에 그려진다. 8% 였을 때 '저항 $344.57' 이 잘렸다(2026-08-10).
+    // left/right 를 좁히지 말 것 (2026-08-10 에 둘 다 실제로 깨져 있었다).
+    //  · right : 지지·저항 markLine 라벨이 position:'end' 라 격자 바깥에 그려진다.
+    //            8% 일 때 '저항 $344.57' 이 잘렸다.
+    //  · left  : 원화 6자리(삼성전자 230,000)가 5% 폭에 안 들어가
+    //            축 라벨이 전부 '000' 으로만 보였다. 포맷터와 함께 넓힌다.
     grid: [
-      { left: '5%', right: '14%', top: '8%', height: '55%' },
-      { left: '5%', right: '14%', top: '70%', height: '15%' },
+      { left: '11%', right: '14%', top: '8%', height: '55%' },
+      { left: '11%', right: '14%', top: '70%', height: '15%' },
     ],
     xAxis: [
       { type: 'category', data: dates, gridIndex: 0, axisLabel: { show: false } },
       { type: 'category', data: dates, gridIndex: 1 },
     ],
     yAxis: [
-      { type: 'value', gridIndex: 0, scale: true },
+      {
+        type: 'value',
+        gridIndex: 0,
+        scale: true,
+        // 원화는 자릿수가 커서 그대로 두면 축이 안 읽힌다 (230000 → '000' 만 보였다)
+        axisLabel: market === 'KR'
+          ? { formatter: (v: number) => (v >= 10000 ? `${(v / 10000).toFixed(1)}만` : v.toLocaleString()) }
+          : undefined,
+      },
       // 거래량은 자릿수가 커서 기본 포맷이면 축 라벨이 잘린다 —
       // AAPL 5천만주가 '50000000' 으로 렌더돼 뒷자리 '000' 만 보였다(2026-08-10).
       {
