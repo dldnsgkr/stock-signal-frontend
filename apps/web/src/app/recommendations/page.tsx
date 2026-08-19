@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { RecommendationCard } from '@/components/recommendation/RecommendationCard';
+import { BandContextBar } from '@/components/recommendation/BandPerformance';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, TrendingDown, ArrowRight } from 'lucide-react';
 import { fmtMarketDateFull, fmtMarketDateNum } from '@/lib/marketTime';
@@ -351,6 +352,10 @@ function RecommendationsContent() {
         </Card>
       ) : (
         <>
+          {/* 정렬이 점수 순이라는 사실과 그게 최선이 아니라는 사실을 목록 상단에서 한 번만 말한다.
+              카드마다 반복하면 20개가 같은 문구라 소음이 된다. */}
+          <BandContextBar market={market} />
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {recs.map((rec) => (
               <RecommendationCard key={rec.id} recommendation={rec} />
