@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { SignalBadge } from './SignalBadge';
 import { AgreementScore } from './AgreementScore';
+import { BandPerformance } from './BandPerformance';
 import { formatPrice, formatPercent } from '@/lib/utils';
 import { fmtMarketDateNum } from '@/lib/marketTime';
 
@@ -66,6 +67,10 @@ export function RecommendationCard({ recommendation: rec }: RecommendationCardPr
             ))}
           </div>
         )}
+
+        {/* 이 점수대가 과거에 실제로 어땠는지. 화면은 점수 높은 순으로 정렬하는데
+            실측 곡선은 ∩자라 최상단이 가장 나쁘다 — 그 사실을 숨기지 않는다. */}
+        <BandPerformance market={market} score={rec.score} />
 
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">{fmtMarketDateNum(rec.recommendedAt, market)}</span>
