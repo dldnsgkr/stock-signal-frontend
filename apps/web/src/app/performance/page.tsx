@@ -344,7 +344,9 @@ export default function PerformancePage() {
             {[
               { label: '평가 완료 추천', value: overview?.totalRecommendations?.toLocaleString() ?? '-', sub: 'BUY 시그널' },
               { label: '7일 적중률', value: overview?.hitRate7d != null ? `${(overview.hitRate7d * 100).toFixed(1)}%` : '-', sub: '양의 수익 발생 비율', trend: overview?.hitRate7d != null ? overview.hitRate7d - 0.5 : null },
-              { label: '30일 적중률', value: overview?.hitRate30d != null ? `${(overview.hitRate30d * 100).toFixed(1)}%` : '-', sub: '양의 수익 발생 비율', trend: overview?.hitRate30d != null ? overview.hitRate30d - 0.5 : null },
+              // 30일 지표는 30일 성숙이 필요해 창을 30일 더 뒤로 밀어 계산한다(백엔드).
+              // 7일 지표와 **모집단이 다르다** — 같은 창으로 오해하지 않게 밝혀 둔다.
+              { label: '30일 적중률', value: overview?.hitRate30d != null ? `${(overview.hitRate30d * 100).toFixed(1)}%` : '-', sub: '양의 수익 발생 비율 · 30일 이전 시그널 기준', trend: overview?.hitRate30d != null ? overview.hitRate30d - 0.5 : null },
               { label: '7일 평균 수익률', value: pct(overview?.avgReturn7d ?? null), sub: '시그널 포트폴리오', trend: overview?.avgReturn7d ?? null },
             ].map(card => (
               <Card key={card.label}>
