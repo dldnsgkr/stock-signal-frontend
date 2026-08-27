@@ -308,7 +308,9 @@ export default function SimulationPage() {
             <span>
               {result.totalRuns}회 파이프라인 실행 기간 ({period}) 동안 BUY 시그널 종목을
               동일 비중으로 매수했다고 가정한 백테스트입니다.
-              슬리피지·수수료 미반영, 과거 성과가 미래를 보장하지 않습니다.
+              수익률·알파는 비용 전 수치이고, <strong>비용 후 알파</strong>가 수수료·거래세·슬리피지
+              가정을 뺀 값입니다(가정은 전략 카드 아래 각주).
+              과거 성과가 미래를 보장하지 않습니다.
             </span>
           </div>
 
