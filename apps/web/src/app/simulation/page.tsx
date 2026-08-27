@@ -13,12 +13,22 @@ interface StrategyStats {
   portfolioReturn: number;
   benchmarkReturn: number | null;
   alpha: number | null;
+  netReturn: number;
+  netAlpha: number | null;
+  avgCost: number;
   excludedOutliers: number;
   stdDev: number;
   sharpe: number | null;
   hitRate: number | null;
   bestReturn: number;
   worstReturn: number;
+}
+
+interface CostModel {
+  explicitRoundTripPct: number;
+  explicitLabel: string;
+  slippageTiers: { minTurnover: number; perSideBp: number }[];
+  note: string;
 }
 
 interface Position {
@@ -52,6 +62,7 @@ interface SimResult {
   };
   positions: Position[];
   distribution: DistPoint[];
+  costModel?: CostModel;
 }
 
 type Market  = 'US' | 'KR';
@@ -164,6 +175,13 @@ function StrategyCard({
         <span title="포트폴리오 변동성이 아니라 종목 간 수익률 산포입니다">종목 간 산포 {stats?.stdDev != null ? pct(stats.stdDev) : '-'}</span>
         <span title="평균 수익률 ÷ 종목 간 산포. 무위험수익률·연율화가 없어 샤프 지수가 아닙니다">수익/산포 {stats?.sharpe?.toFixed(2) ?? '-'}</span>
       </div>
+      {/* 실제로 벌 수 있었는가 — 비용 가정은 카드 아래 각주 한 곳에만 둔다 */}
+      <p className="text-xs border-t pt-1" title="수수료·거래세·슬리피지(가정)를 뺀 알파입니다. 가정은 아래 각주 참조.">
+        <span className="text-muted-foreground">비용 후 알파 </span>
+        <span className={`font-semibold tabular-nums ${
+          stats?.netAlpha != null ? (stats.netAlpha > 0 ? 'text-green-600' : 'text-red-500') : 'text-muted-foreground'
+        }`}>{pct(stats?.netAlpha ?? null, 2)}</span>
+      </p>
       <p className="text-xs text-muted-foreground border-t pt-1">{meta.desc}</p>
     </button>
   );
@@ -329,6 +347,26 @@ export default function SimulationPage() {
             ))}
           </div>
 
+          {/* 비용 가정 각주 — 한 곳에만 둔다(카드마다 반복 금지). 값은 백엔드가 준다. */}
+          {result.costModel && (
+            <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+              <strong>비용 후 지표의 가정</strong>{' — '}
+              명시 비용: {result.costModel.explicitLabel}. 슬리피지(편도, 진입일 거래대금 구간):{' '}
+              {result.costModel.slippageTiers.map((t, i) => {
+                const bound = market === 'KR'
+                  ? `${(t.minTurnover / 1e8).toLocaleString()}억`
+                  : `$${(t.minTurnover / 1e6).toLocaleString()}M`;
+                return (
+                  <span key={t.minTurnover}>
+                    {i > 0 && ' / '}
+                    {t.minTurnover > 0 ? `≥${bound}` : '그 미만'} {t.perSideBp}bp
+                  </span>
+                );
+              })}
+              . {result.costModel.note}
+            </div>
+          )}
+
           {/* 선택된 전략 상세 + 분포 차트 */}
           {stats && (
             <div className="grid gap-4 lg:grid-cols-5">
@@ -343,6 +381,9 @@ export default function SimulationPage() {
                       { label: '포트폴리오 수익률', value: pct(stats.portfolioReturn), trend: stats.portfolioReturn },
                       { label: '벤치마크 수익률',   value: pct(stats.benchmarkReturn), trend: stats.benchmarkReturn },
                       { label: '초과 수익 (Alpha)', value: pct(stats.alpha),           trend: stats.alpha },
+                      { label: '비용 후 수익률',    value: pct(stats.netReturn),       trend: stats.netReturn },
+                      { label: '비용 후 알파',      value: pct(stats.netAlpha),        trend: stats.netAlpha },
+                      { label: '평균 왕복 비용(가정)', value: `${(stats.avgCost * 100).toFixed(2)}%`, trend: null },
                       { label: '적중률',            value: stats.hitRate != null ? `${(stats.hitRate*100).toFixed(1)}%` : '-', trend: stats.hitRate != null ? stats.hitRate - 0.5 : null },
                       // ⚠️ '변동성'·'Sharpe' 로 되돌리지 말 것 — 실제 계산은 종목 간 횡단면 산포다.
                       // N 종목 포트폴리오의 변동성은 대략 이 값의 1/√N 이고, 아래 비율에는
