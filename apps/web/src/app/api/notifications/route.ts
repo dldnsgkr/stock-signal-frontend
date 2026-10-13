@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { useNeon, EC2_API_URL } from '@/server/mode';
+import { notificationsService } from '@/server';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   let uid: number | null = null;
@@ -12,6 +14,14 @@ export async function GET() {
     /* noop */
   }
   if (!uid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const res = await fetch(`${API_URL}/notifications?userId=${uid}&limit=50`, { cache: 'no-store' });
-  return NextResponse.json(await res.json(), { status: res.status });
+  if (!useNeon()) {
+    const res = await fetch(`${EC2_API_URL}/notifications?userId=${uid}&limit=50`, { cache: 'no-store' });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+  try {
+    return NextResponse.json(await notificationsService.listForUser(uid, 50));
+  } catch (e) {
+    console.error('[notifications]', e);
+    return NextResponse.json({ error: 'internal error' }, { status: 500 });
+  }
 }

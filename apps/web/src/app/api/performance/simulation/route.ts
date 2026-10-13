@@ -1,0 +1,14 @@
+// EC2 API 의 동일 경로를 대체하는 이식 라우트 (serverless-migration 5단계).
+// DATA_SOURCE=neon 플립 후 api.ts/프록시가 이 경로를 자신의 오리진으로 호출한다.
+import { wrapHandler, q } from '@/server/handler';
+import { performanceService } from '@/server';
+
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapHandler(async (req) =>
+  performanceService.getPortfolioSimulation(
+    q(req, 'market', 'US')!,
+    q(req, 'period', '90d') as '30d' | '90d' | '180d',
+    q(req, 'horizon', '7d') as '7d' | '30d',
+  ),
+);

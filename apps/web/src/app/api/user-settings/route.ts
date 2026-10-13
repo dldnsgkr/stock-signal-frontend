@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { useNeon, EC2_API_URL } from '@/server/mode';
+import { userSettingsService } from '@/server';
+import { HttpException } from '@/server/http-errors';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+export const dynamic = 'force-dynamic';
 
 async function userId(): Promise<number | null> {
   try {
@@ -12,21 +15,37 @@ async function userId(): Promise<number | null> {
   }
 }
 
+function toResponse(e: unknown) {
+  if (e instanceof HttpException) return NextResponse.json({ error: e.message }, { status: e.status });
+  console.error('[user-settings]', e);
+  return NextResponse.json({ error: 'internal error' }, { status: 500 });
+}
+
 export async function GET() {
   const uid = await userId();
   if (!uid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const res = await fetch(`${API_URL}/user-settings?userId=${uid}`, { cache: 'no-store' });
-  return NextResponse.json(await res.json(), { status: res.status });
+  if (!useNeon()) {
+    const res = await fetch(`${EC2_API_URL}/user-settings?userId=${uid}`, { cache: 'no-store' });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+  try {
+    return NextResponse.json(await userSettingsService.get(uid));
+  } catch (e) { return toResponse(e); }
 }
 
 export async function PUT(req: NextRequest) {
   const uid = await userId();
   if (!uid) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const patch = await req.json();
-  const res = await fetch(`${API_URL}/user-settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...patch, userId: uid }),
-  });
-  return NextResponse.json(await res.json(), { status: res.status });
+  if (!useNeon()) {
+    const res = await fetch(`${EC2_API_URL}/user-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...patch, userId: uid }),
+    });
+    return NextResponse.json(await res.json(), { status: res.status });
+  }
+  try {
+    return NextResponse.json(await userSettingsService.update(uid, patch));
+  } catch (e) { return toResponse(e); }
 }

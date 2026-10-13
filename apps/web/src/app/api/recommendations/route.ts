@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiBase } from '@/server/mode';
+
+const API_URL = apiBase();
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
