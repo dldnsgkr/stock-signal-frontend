@@ -13,5 +13,7 @@ export async function GET() {
     has_VAPID_PUBLIC_KEY: !!process.env.VAPID_PUBLIC_KEY,
     has_VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
     VERCEL_URL_set: !!process.env.VERCEL_URL,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? null,
+    VERCEL_ENV: process.env.VERCEL_ENV ?? null,
   });
 }
