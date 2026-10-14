@@ -7,5 +7,11 @@ export async function GET() {
     API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NODE_ENV: process.env.NODE_ENV,
+    // 마이그레이션 플립 디버그 — 값이 아니라 존재 여부만 (boolean)
+    DATA_SOURCE: process.env.DATA_SOURCE ?? null,
+    has_DATABASE_URL: !!process.env.DATABASE_URL,
+    has_VAPID_PUBLIC_KEY: !!process.env.VAPID_PUBLIC_KEY,
+    has_VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
+    VERCEL_URL_set: !!process.env.VERCEL_URL,
   });
 }
