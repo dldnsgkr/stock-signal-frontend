@@ -385,7 +385,7 @@ export default function SystemPage() {
     <div className="space-y-5">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">데이터 헬스체크 · EC2 서버 상태</p>
+        <p className="text-sm text-muted-foreground">데이터 헬스체크 · 파이프라인 상태</p>
         <button
           onClick={() => fetchAll(true)}
           disabled={refreshing}

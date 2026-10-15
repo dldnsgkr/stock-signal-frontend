@@ -300,9 +300,8 @@ export default function InvestorTradingPage() {
                   KRX 데이터 포털이 2026년부터 로그인을 요구합니다.<br />
                   <a href="https://data.krx.co.kr" target="_blank" rel="noopener noreferrer"
                     className="underline text-blue-500">data.krx.co.kr</a>에서 무료 회원가입 후
-                  EC2 .env에 <code className="bg-muted px-1 rounded">KRX_ID</code> /&nbsp;
-                  <code className="bg-muted px-1 rounded">KRX_PW</code> 를 추가하고
-                  PM2를 재시작하세요.
+                  백엔드 저장소 GitHub Actions secret 의 <code className="bg-muted px-1 rounded">KRX_ID</code> /&nbsp;
+                  <code className="bg-muted px-1 rounded">KRX_PW</code> 를 갱신하세요.
                 </p>
               </>
             ) : (

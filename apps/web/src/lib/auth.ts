@@ -1,5 +1,6 @@
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Google from 'next-auth/providers/google';
+import { useNeon } from '@/server/mode';
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -17,6 +18,22 @@ const config: NextAuthConfig = {
     async jwt({ token, account, profile }) {
       // 최초 로그인 시에만 백엔드와 동기화
       if (account && profile) {
+        const googleId = (profile as { sub?: string }).sub;
+        if (useNeon() && token.email && googleId) {
+          try {
+            const { usersService } = await import('@/server');
+            const user = await usersService.syncFromGoogle({
+              email: token.email,
+              name: token.name,
+              googleId,
+              avatarUrl: token.picture,
+            });
+            token.userId = user.id;
+          } catch (err) {
+            console.error('[NextAuth] 유저 동기화 실패:', err);
+          }
+          return token;
+        }
         try {
           const res = await fetch(`${BACKEND_URL}/users/sync`, {
             method: 'POST',
@@ -24,7 +41,7 @@ const config: NextAuthConfig = {
             body: JSON.stringify({
               email: token.email,
               name: token.name,
-              googleId: (profile as { sub?: string }).sub,
+              googleId,
               avatarUrl: token.picture,
             }),
           });
