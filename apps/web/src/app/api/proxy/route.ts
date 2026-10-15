@@ -5,8 +5,6 @@ import { useNeon, EC2_API_URL } from '@/server/mode';
 // analysis 의존)만 EC2 로 폴백한다. 플립 전엔 전부 EC2 — 롤백은 env 제거.
 const EC2_ONLY = [
   /^\/market\/(investor-trading|investor-top-stocks|foreign-top-stocks)/,
-  /\/briefing($|\?)/,
-  /\/technical-levels($|\?)/,
 ];
 
 function targetBase(endpoint: string, reqUrl: string): string {

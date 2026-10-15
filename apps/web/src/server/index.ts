@@ -9,6 +9,8 @@ import { SubscriptionService } from './services/subscription.service';
 import { UserSettingsService } from './services/user-settings.service';
 import { NotificationsService } from './services/notifications.service';
 import { PushService } from './services/push.service';
+import { BriefingService } from './services/briefing.service';
+import { TechnicalLevelsService } from './services/technical-levels.service';
 
 export const performanceService = new PerformanceService(prisma);
 export const recommendationsService = new RecommendationsService(prisma);
@@ -19,3 +21,5 @@ export const subscriptionService = new SubscriptionService(prisma);
 export const userSettingsService = new UserSettingsService(prisma);
 export const notificationsService = new NotificationsService(prisma);
 export const pushService = new PushService(prisma);
+export const briefingService = new BriefingService(prisma);
+export const technicalLevelsService = new TechnicalLevelsService(prisma);

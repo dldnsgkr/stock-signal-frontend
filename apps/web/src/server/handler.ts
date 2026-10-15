@@ -7,12 +7,16 @@ import { HttpException } from './http-errors';
 // (2026-10-15 실측) — 첫 요청만 계산하고 이후 30분은 엣지가 즉시 응답한다.
 // ⚠️ wrapHandler 는 사용자별 데이터(관심종목·설정·구독)에는 쓰지 말 것 — 그 라우트들은
 //    세션별 응답이라 공유 캐시에 실리면 다른 사람에게 노출된다. 현재도 쓰지 않는다.
-const PUBLIC_CACHE = 'public, s-maxage=1800, stale-while-revalidate=86400';
+const publicCache = (maxAge: number) => `public, s-maxage=${maxAge}, stale-while-revalidate=86400`;
 
-export function wrapHandler(fn: (req: NextRequest, ctx?: any) => Promise<unknown>) {
+export function wrapHandler(
+  fn: (req: NextRequest, ctx?: any) => Promise<unknown>,
+  { maxAge = 1800 }: { maxAge?: number } = {},
+) {
   return async (req: NextRequest, ctx?: any) => {
     try {
-      return NextResponse.json(await fn(req, ctx), { headers: { 'Cache-Control': PUBLIC_CACHE } });
+      // 성공 응답만 캐시한다 — 아래 catch 의 에러 응답에는 캐시 헤더가 없다
+      return NextResponse.json(await fn(req, ctx), { headers: { 'Cache-Control': publicCache(maxAge) } });
     } catch (e: unknown) {
       if (e instanceof HttpException) {
         return NextResponse.json({ error: e.message }, { status: e.status });
