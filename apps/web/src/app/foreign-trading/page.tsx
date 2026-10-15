@@ -13,8 +13,8 @@ interface StockEntry {
   name: string;
   netBuyVol: number;
   netBuyVal: number;
-  buyVal: number;
-  sellVal: number;
+  buyVal: number | null;   // 2026-10-15 이전 날짜는 미적재
+  sellVal: number | null;
   currentPrice?: number | null;
   changeRate?: number | null;
 }
@@ -50,7 +50,8 @@ function fromInputDate(s: string): string {
   return s.replace(/-/g, '');
 }
 
-function fmtVal(v: number): string {
+function fmtVal(v: number | null): string {
+  if (v == null) return '—';
   if (v === 0) return '0';
   const sign = v > 0 ? '+' : '';
   const abs = Math.abs(v);

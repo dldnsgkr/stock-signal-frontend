@@ -3,9 +3,9 @@ import { useNeon, EC2_API_URL } from '@/server/mode';
 
 // DATA_SOURCE=neon 이면 이식 라우트(자기 오리진)로, 미이식(실시간 KRX·브리핑 등
 // analysis 의존)만 EC2 로 폴백한다. 플립 전엔 전부 EC2 — 롤백은 env 제거.
-const EC2_ONLY = [
-  /^\/market\/(investor-trading|investor-top-stocks|foreign-top-stocks)/,
-];
+// 전 엔드포인트 이식 완료(2026-10-15) — EC2 폴백 대상 없음. 새로 미이식 엔드포인트가
+// 생기면 여기에 정규식을 추가하면 플립 후에도 EC2 로 간다(컷오버 전까지만 유효).
+const EC2_ONLY: RegExp[] = [];
 
 function targetBase(endpoint: string, reqUrl: string): string {
   if (!useNeon()) return EC2_API_URL;
