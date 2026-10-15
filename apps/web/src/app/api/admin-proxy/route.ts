@@ -1,9 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { useNeon } from '@/server/mode';
+import { adminService } from '@/server';
+import { HttpException } from '@/server/http-errors';
 
+// 인증은 src/proxy.ts(미들웨어)가 /api/admin-proxy 전체에 건다 — 여기선 다시 확인하지 않는다.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+// DATA_SOURCE=neon 이면 EC2 대신 서버리스 관리자 서비스로 처리한다(서버리스 이전 6단계 준비).
+async function handleLocal(method: 'GET' | 'POST', sp: URLSearchParams): Promise<NextResponse> {
+  const endpoint = sp.get('endpoint');
+  const market = sp.get('market') ?? 'US';
+  try {
+    if (method === 'GET') {
+      if (!endpoint) return NextResponse.json(await adminService.getJobStatus(sp.get('jobId') ?? ''));
+      switch (endpoint) {
+        case '/admin/runs': return NextResponse.json(await adminService.getRecentRunsDetailed(Number(sp.get('limit') ?? 50)));
+        case '/admin/jobs/failures': return NextResponse.json(await adminService.getRecentFailures(Number(sp.get('limit') ?? 30)));
+        case '/admin/health': return NextResponse.json(await adminService.getDataHealth());
+        case '/admin/system': return NextResponse.json(await adminService.getSystemStatus());
+        case '/admin/quality': return NextResponse.json(await adminService.getDataQualityIssues(market));
+        case '/admin/logs': return NextResponse.json(await adminService.getLogs(sp.get('service') ?? 'api', Number(sp.get('lines') ?? 100)));
+        case '/admin/scoring-analysis': return NextResponse.json(await adminService.getScoringAnalysis(market));
+      }
+    } else {
+      if (endpoint === '/admin/backtest/rescore') {
+        return NextResponse.json({
+          error: '백테스트 재채점은 서버리스 전환으로 화면에서 비활성화됐습니다. '
+            + '같은 기능은 저장소의 apps/analysis-service/scripts/(sweep_weights.py 등)로 실행하세요.',
+        }, { status: 501 });
+      }
+      if (endpoint?.startsWith('/admin/jobs/')) {
+        return NextResponse.json(await adminService.triggerJob(endpoint, market));
+      }
+    }
+    return NextResponse.json({ error: `지원하지 않는 관리자 엔드포인트: ${endpoint}` }, { status: 404 });
+  } catch (e) {
+    if (e instanceof HttpException) return NextResponse.json({ error: e.message }, { status: e.status });
+    console.error('[admin]', e);
+    return NextResponse.json({ error: 'internal error' }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  if (useNeon()) return handleLocal('POST', searchParams);
   const endpoint = searchParams.get('endpoint');
 
   if (!endpoint) {
@@ -40,6 +80,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  if (useNeon()) return handleLocal('GET', searchParams);
   const endpoint = searchParams.get('endpoint');
 
   // job 상태 조회 (기존 방식)

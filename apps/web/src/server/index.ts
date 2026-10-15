@@ -12,6 +12,7 @@ import { PushService } from './services/push.service';
 import { BriefingService } from './services/briefing.service';
 import { TechnicalLevelsService } from './services/technical-levels.service';
 import { InvestorFlowService } from './services/investor-flow.service';
+import { AdminService } from './services/admin.service';
 
 export const performanceService = new PerformanceService(prisma);
 export const recommendationsService = new RecommendationsService(prisma);
@@ -25,3 +26,4 @@ export const pushService = new PushService(prisma);
 export const briefingService = new BriefingService(prisma);
 export const technicalLevelsService = new TechnicalLevelsService(prisma);
 export const investorFlowService = new InvestorFlowService(prisma);
+export const adminService = new AdminService(prisma);
