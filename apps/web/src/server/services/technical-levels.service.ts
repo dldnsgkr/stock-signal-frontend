@@ -192,12 +192,19 @@ export class TechnicalLevelsService {
 
     const since = new Date();
     since.setDate(since.getDate() - days);
-    const prices = await this.prisma.priceDaily.findMany({
-      where: { stockId: stock.id, date: { gte: since } },
+    // MA60 은 거래일 60개가 필요한데 달력 90일에 KR 연휴(추석·한글날 등)가 끼면 60개가
+    // 안 돼 ma60 이 null 로 나갔다(EC2 원본도 같았다). 이평용으로만 30일 더 읽고
+    // (가격 보존 창 120일 안), 지지·저항·목표가는 기존 창(days) 그대로 계산한다.
+    const maSince = new Date(since);
+    maSince.setDate(maSince.getDate() - 30);
+    const history = await this.prisma.priceDaily.findMany({
+      where: { stockId: stock.id, date: { gte: maSince } },
       orderBy: { date: 'asc' },
-      select: { close: true, high: true, low: true },
+      select: { date: true, close: true, high: true, low: true },
     });
+    const prices = history.filter((p) => p.date >= since);
     if (prices.length < 20) throw new HttpException(422, 'Insufficient price data');
+    const maCloses = history.map((p) => Number(p.close));
 
     const closes = prices.map((p) => Number(p.close));
     const highs = prices.map((p) => Number(p.high));
@@ -226,7 +233,7 @@ export class TechnicalLevelsService {
       market: mkt,
       currentPrice: current,
       ma20: closes.length >= 20 ? r4(mean(closes.slice(-20))) : null,
-      ma60: closes.length >= 60 ? r4(mean(closes.slice(-60))) : null,
+      ma60: maCloses.length >= 60 ? r4(mean(maCloses.slice(-60))) : null,
       support: sr.support,
       resistance: sr.resistance,
       priceTargets: targets,

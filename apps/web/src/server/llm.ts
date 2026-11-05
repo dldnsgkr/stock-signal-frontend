@@ -34,17 +34,43 @@ async function postJson(url: string, body: unknown, headers: Record<string, stri
   }
 }
 
+// 과부하로 볼 응답 — 이때만 대체 모델로 한 번 더 시도한다(키·요청 오류는 그대로 실패).
+const OVERLOADED = new Set([429, 500, 503, 504]);
+
 async function callGemini(prompt: string, key: string, maxTokens: number, temperature: number) {
   // gemini-2.0-flash 계열은 무료 할당량 429 사례가 있어 flash-latest 가 기본값
   const model = process.env.LLM_MODEL || 'gemini-flash-latest';
-  const res = await postJson(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-    {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature, maxOutputTokens: maxTokens },
-    },
-  );
-  if (!res.ok) throw new LLMError(`gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  // flash-latest 는 무료 등급에서 503 "high demand"·30초 타임아웃이 잦아 브리핑이 통째로
+  // 실패했다(2026-10-26 실측). 더 가벼운 lite 로 한 번만 대체한다.
+  const fallback = process.env.LLM_FALLBACK_MODEL || 'gemini-flash-lite-latest';
+  try {
+    return await callGeminiModel(model, prompt, key, maxTokens, temperature);
+  } catch (e) {
+    if (!(e instanceof GeminiOverloaded) || fallback === model) throw e;
+    return callGeminiModel(fallback, prompt, key, maxTokens, temperature);
+  }
+}
+
+class GeminiOverloaded extends LLMError {}
+
+async function callGeminiModel(model: string, prompt: string, key: string, maxTokens: number, temperature: number) {
+  let res: Response;
+  try {
+    res = await postJson(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature, maxOutputTokens: maxTokens },
+      },
+    );
+  } catch (e) {
+    // TIMEOUT_MS 초과(AbortError)도 과부하로 본다
+    throw new GeminiOverloaded(`gemini ${model} request failed: ${e instanceof Error ? e.message : e}`);
+  }
+  if (!res.ok) {
+    const msg = `gemini ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`;
+    throw OVERLOADED.has(res.status) ? new GeminiOverloaded(msg) : new LLMError(msg);
+  }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new LLMError(`gemini empty response: ${JSON.stringify(data).slice(0, 200)}`);

@@ -39,7 +39,16 @@ export class InvestorFlowService {
   async topStocks(market: string, date: string | undefined, investorType: string, limit: number) {
     const mkt = resolveMarket(market);
     const inv = (INVESTORS as readonly string[]).includes(investorType) ? investorType : 'institution';
-    const ymd = date ?? new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    // 날짜를 안 주면 '적재된 가장 최근 거래일'. 예전 실시간 API 를 흉내 내 오늘 날짜를 쓰면,
+    // 수급은 KR 파이프라인(장 마감 후 저녁)이 적재하므로 낮·주말·휴일엔 늘 빈 목록이었다
+    // (/investor-trading 상위 종목 영역 — 날짜 없이 부른다).
+    let ymd = date;
+    if (!ymd) {
+      const [latest] = await this.prisma.$queryRaw<{ d: Date | null }[]>`
+        SELECT max(trade_date) AS d FROM investor_flow_daily WHERE investor_type = ${inv}
+      `;
+      ymd = (latest?.d ?? new Date()).toISOString().slice(0, 10).replace(/-/g, '');
+    }
     const day = ymdToDate(ymd);
 
     const rows = await this.prisma.$queryRaw<TopRow[]>`
